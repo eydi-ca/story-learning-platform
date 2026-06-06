@@ -1,67 +1,63 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { loginAdmin } from '../utils/storage'
+import PasswordField from '../components/forms/PasswordField'
+import { FIELD_LIMITS, getAdminLoginGuard, loginAdmin } from '../utils/auth'
 
 function AdminLogin() {
   const navigate = useNavigate()
-
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
+  const [form, setForm] = useState({ identifier: '', password: '' })
   const [error, setError] = useState('')
+  const [guard, setGuard] = useState(getAdminLoginGuard())
 
-  function handleLogin(e) {
-    e.preventDefault()
+  useEffect(() => {
+    if (!guard.locked) return undefined
+    const timer = window.setInterval(() => setGuard(getAdminLoginGuard()), 1000)
+    return () => window.clearInterval(timer)
+  }, [guard.locked])
 
-    if (username === 'admin' && password === 'admin123') {
-      loginAdmin()
-      navigate('/admin/dashboard')
+  async function handleSubmit(event) {
+    event.preventDefault()
+    const result = await loginAdmin(form)
+    if (result.error) {
+      setError(result.error)
+      setGuard(getAdminLoginGuard())
       return
     }
-
-    setError('Invalid login. Use admin / admin123 for demo.')
+    navigate('/admin/dashboard')
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-900 px-4">
-      <form
-        onSubmit={handleLogin}
-        className="w-full max-w-md rounded-3xl bg-white p-8 shadow-xl"
-      >
-        <h1 className="text-3xl font-bold text-slate-900">Admin Login</h1>
-        <p className="mt-2 text-slate-600">
-          Monitor students, progress, scores, and completion.
-        </p>
-
-        {error && (
-          <div className="mt-4 rounded-xl bg-red-50 p-3 text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        <label className="block mt-6">
-          <span className="font-semibold text-slate-700">Username</span>
+    <section className="mx-auto max-w-md px-4 py-16">
+      <h1 className="text-3xl font-black text-slate-950">Admin Login</h1>
+      <form className="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
+        {error ? <p className="rounded-lg bg-red-50 p-3 font-semibold text-red-700">{error}</p> : null}
+        {guard.locked ? (
+          <p className="rounded-lg bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+            Admin login is temporarily locked. Try again in {guard.secondsRemaining} seconds.
+          </p>
+        ) : null}
+        <label className="block text-sm font-bold text-slate-700" htmlFor="admin-identifier">Admin username/email
           <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
+            autoComplete="username"
+            className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
+            id="admin-identifier"
+            maxLength={FIELD_LIMITS.identifierMax}
+            placeholder="admin"
+            value={form.identifier}
+            onChange={(event) => setForm({ ...form, identifier: event.target.value })}
           />
         </label>
-
-        <label className="block mt-4">
-          <span className="font-semibold text-slate-700">Password</span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3"
-          />
-        </label>
-
-        <button className="mt-6 w-full rounded-xl bg-indigo-600 px-4 py-3 text-white font-semibold hover:bg-indigo-700">
+        <PasswordField
+          id="admin-password"
+          value={form.password}
+          onChange={(password) => setForm({ ...form, password })}
+        />
+        <button className="gold-button w-full rounded-lg px-4 py-3 font-bold" disabled={guard.locked}>
           Login
         </button>
+        <p className="text-sm text-slate-500">Demo admin: <span className="font-bold">admin</span> / <span className="font-bold">admin123</span></p>
       </form>
-    </main>
+    </section>
   )
 }
 

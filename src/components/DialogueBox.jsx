@@ -1,8 +1,14 @@
+import TypewriterText from './TypewriterText'
+
 function DialogueBox({ speaker, text }) {
   return (
-    <div className="rounded-2xl border-4 border-slate-800 bg-white p-5 shadow-lg">
-      <p className="text-sm font-bold text-indigo-700 mb-2">{speaker}</p>
-      <p className="text-lg text-slate-800 leading-relaxed">{text}</p>
+    <div className="rounded-[2rem] border border-white/30 bg-slate-950/75 p-5 text-white shadow-2xl backdrop-blur">
+      <p className="text-sm font-bold uppercase tracking-[0.2em] text-sky-200">
+        {speaker}
+      </p>
+      <div className="mt-3 text-lg leading-8 text-slate-100">
+        <TypewriterText text={text} />
+      </div>
     </div>
   )
 }

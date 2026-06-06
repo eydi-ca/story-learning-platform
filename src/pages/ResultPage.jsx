@@ -1,107 +1,59 @@
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { chapters } from '../data/chapters'
-import { getStudent, getStudentProgress } from '../utils/storage'
+import { siteContent } from '../data/siteContent'
+import { getCurrentUser } from '../utils/auth'
+import { getOrSetActiveClass } from '../utils/classUtils'
+import { getLatestResult } from '../utils/progress'
 
 function ResultPage() {
-  const { id } = useParams()
-  const student = getStudent()
-  const chapter = chapters.find((item) => item.id === id)
+  const { chapterId } = useParams()
+  const user = getCurrentUser()
+  const activeClass = getOrSetActiveClass(user.id)
+  const chapter = chapters.find((item) => item.id === chapterId)
 
-  if (!student || !chapter) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <Link to="/student/start" className="text-indigo-700 font-semibold">
-          Go back to start
-        </Link>
-      </main>
-    )
-  }
+  if (!chapter || !activeClass) return <Navigate to="/student/chapters" replace />
 
-  const progress = getStudentProgress(student.id)
-  const result = progress.find((item) => item.chapterId === id)
+  const result = getLatestResult(user.id, activeClass.classCode, chapter.id)
+  const nextChapter = chapters[chapters.findIndex((item) => item.id === chapter.id) + 1]
 
   if (!result) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
-        <Link to={`/student/chapter/${id}`} className="text-indigo-700">
-          Take the activity first
-        </Link>
-      </main>
+      <section className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+        <h1 className="text-3xl font-black text-slate-950">No result found</h1>
+        <Link className="mt-5 inline-block rounded-lg bg-slate-950 px-5 py-3 font-bold text-white" to="/student/chapters">Back to timeline</Link>
+      </section>
     )
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 px-6 py-10">
-      <section className="max-w-3xl mx-auto rounded-3xl bg-white p-8 shadow">
-        <p
-          className={`font-bold ${
-            result.passed ? 'text-green-700' : 'text-red-700'
-          }`}
-        >
-          {result.passed ? 'Passed' : 'Needs Improvement'}
+    <section>
+      <div className={`rounded-xl border p-6 shadow-sm ${result.passed ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
+        <h1 className="text-3xl font-black text-slate-950">{result.passed ? siteContent.result.passedTitle : siteContent.result.failedTitle}</h1>
+        <p className="mt-2 text-slate-700">Score: <span className="font-black">{result.score}/{result.total}</span> - Percentage: <span className="font-black">{result.percentage}%</span></p>
+        <p className="mt-2 text-slate-600">Completed at {new Date(result.completedAt).toLocaleString()}</p>
+        <p className="mt-3 font-semibold text-slate-800">
+          {result.passed ? siteContent.result.passedMessage : siteContent.result.failedMessage}
         </p>
+      </div>
 
-        <h1 className="text-4xl font-extrabold text-slate-900 mt-2">
-          Your Score: {result.score}/{result.total}
-        </h1>
-
-        <p className="mt-2 text-slate-600">
-          Percentage Result: {result.percentage}%
-        </p>
-
-        <div className="mt-8">
-          <h2 className="text-xl font-bold mb-4">Answer Feedback</h2>
-
-          <div className="grid gap-4">
-            {chapter.activities.map((question) => {
-              const studentAnswer = result.answers[question.id]
-              const isCorrect = studentAnswer === question.answer
-
-              return (
-                <div
-                  key={question.id}
-                  className="rounded-2xl border border-slate-200 p-4"
-                >
-                  <p className="font-semibold text-slate-900">
-                    {question.question}
-                  </p>
-
-                  <p className="mt-2 text-sm">
-                    Your answer:{' '}
-                    <span
-                      className={
-                        isCorrect ? 'text-green-700' : 'text-red-700'
-                      }
-                    >
-                      {studentAnswer}
-                    </span>
-                  </p>
-
-                  {!isCorrect && (
-                    <p className="text-sm text-slate-600">
-                      Correct answer: {question.answer}
-                    </p>
-                  )}
-
-                  <p className="mt-2 text-sm text-slate-600">
-                    {question.feedback}
-                  </p>
-                </div>
-              )
-            })}
+      <div className="mt-6 space-y-4">
+        {result.answers.map((answer, index) => (
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" key={answer.questionId}>
+            <p className="font-black text-slate-950">{index + 1}. {answer.question}</p>
+            <p className="mt-2 text-sm text-slate-600">Your answer: <span className="font-bold">{answer.studentAnswer}</span></p>
+            <p className="text-sm text-slate-600">Correct answer: <span className="font-bold">{answer.correctAnswer}</span></p>
+            <p className={`mt-2 font-semibold ${answer.correct ? 'text-emerald-700' : 'text-red-700'}`}>{answer.feedback}</p>
           </div>
-        </div>
+        ))}
+      </div>
 
-        <div className="mt-8 flex gap-4">
-          <Link
-            to="/student/chapters"
-            className="rounded-xl bg-indigo-600 px-5 py-3 text-white font-semibold"
-          >
-            Back to Chapters
-          </Link>
-        </div>
-      </section>
-    </main>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Link className="rounded-lg border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700" to="/student/chapters">Back to timeline</Link>
+        {result.passed && nextChapter ? <Link className="rounded-lg bg-slate-950 px-5 py-3 font-bold text-white" to={`/student/chapter/${nextChapter.id}`}>Next chapter</Link> : null}
+        {!result.passed ? <Link className="rounded-lg bg-slate-950 px-5 py-3 font-bold text-white" to={`/student/chapter/${chapter.id}/activity`}>Retry activity</Link> : null}
+        {!result.passed ? <Link className="rounded-lg border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700" to={`/student/chapter/${chapter.id}`}>Review chapter</Link> : null}
+      </div>
+    </section>
   )
 }
 

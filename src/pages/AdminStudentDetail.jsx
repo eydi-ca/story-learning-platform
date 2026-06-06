@@ -1,88 +1,95 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { getAllProgress, isAdminLoggedIn } from '../utils/storage'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { chapters } from '../data/chapters'
+import { getStudentSummary } from '../utils/progressUtils'
+import { getStudentById, getStudentProgress } from '../utils/storage'
 
-function AdminStudents() {
-  const navigate = useNavigate()
+function AdminStudentDetail() {
+  const { id } = useParams()
+  const student = getStudentById(id)
 
-  if (!isAdminLoggedIn()) {
-    navigate('/admin/login')
-    return null
+  if (!student) {
+    return <Navigate to="/admin/students" replace />
   }
 
-  const progress = getAllProgress()
+  const results = getStudentProgress(student.id)
+  const summary = getStudentSummary(chapters, results)
 
   return (
-    <main className="min-h-screen bg-slate-100 px-6 py-10">
-      <section className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Student Progress
-            </h1>
-            <p className="text-slate-600">
-              View completed chapters, scores, and passing status.
-            </p>
+    <section className="grid gap-8">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-black text-slate-900">{student.name}</h1>
+          <p className="mt-3 text-slate-600">
+            {student.section} - {student.classCode} - Joined{' '}
+            {new Date(student.createdAt).toLocaleString()}
+          </p>
+        </div>
+
+        <Link
+          to="/admin/students"
+          className="rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700"
+        >
+          Back to students
+        </Link>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Progress
+          </p>
+          <p className="mt-3 text-3xl font-black text-slate-900">
+            {summary.passedCount}/{chapters.length}
+          </p>
+        </div>
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Completion
+          </p>
+          <p className="mt-3 text-3xl font-black text-slate-900">{summary.percentage}%</p>
+        </div>
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Current chapter
+          </p>
+          <p className="mt-3 text-xl font-black text-slate-900">
+            {summary.currentChapter?.title ?? 'No chapter yet'}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-[2rem] bg-white p-6 shadow-sm">
+        <h2 className="text-2xl font-black text-slate-900">Saved results</h2>
+        {results.length === 0 ? (
+          <p className="mt-4 text-slate-500">No results saved for this student yet.</p>
+        ) : (
+          <div className="mt-4 grid gap-4">
+            {results.map((result) => (
+              <div
+                key={result.chapterId}
+                className="rounded-3xl border border-slate-200 p-5"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900">
+                      {result.chapterTitle}
+                    </h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {new Date(result.completedAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-slate-700">
+                    {result.score}/{result.total} - {result.percentage}% -{' '}
+                    {result.passed ? 'Passed' : 'Needs retry'}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-
-          <Link to="/admin/dashboard" className="text-indigo-700 font-semibold">
-            Back to Dashboard
-          </Link>
-        </div>
-
-        <div className="mt-8 overflow-x-auto rounded-2xl bg-white shadow">
-          <table className="w-full text-left">
-            <thead className="bg-slate-900 text-white">
-              <tr>
-                <th className="p-4">Student</th>
-                <th className="p-4">Class Code</th>
-                <th className="p-4">Chapter</th>
-                <th className="p-4">Score</th>
-                <th className="p-4">Percentage</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Completed At</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {progress.length === 0 && (
-                <tr>
-                  <td colSpan="7" className="p-4 text-center text-slate-500">
-                    No student progress yet.
-                  </td>
-                </tr>
-              )}
-
-              {progress.map((item, index) => (
-                <tr key={index} className="border-b">
-                  <td className="p-4 font-semibold">{item.studentName}</td>
-                  <td className="p-4">{item.classCode}</td>
-                  <td className="p-4">{item.chapterTitle}</td>
-                  <td className="p-4">
-                    {item.score}/{item.total}
-                  </td>
-                  <td className="p-4">{item.percentage}%</td>
-                  <td className="p-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${
-                        item.passed
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}
-                    >
-                      {item.passed ? 'Passed' : 'Needs Improvement'}
-                    </span>
-                  </td>
-                  <td className="p-4">
-                    {new Date(item.completedAt).toLocaleString()}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
+        )}
+      </div>
+    </section>
   )
 }
 
-export default AdminStudents
+export default AdminStudentDetail

@@ -1,20 +1,32 @@
-export function shuffleArray(array) {
-  return [...array].sort(() => Math.random() - 0.5)
+export function shuffle(items) {
+  return [...items].sort(() => Math.random() - 0.5)
 }
 
-export function calculateScore(questions, answers) {
-  let score = 0
+export function prepareQuestions(questions) {
+  return shuffle(questions).map((question) => ({
+    ...question,
+    choices: shuffle(question.choices),
+  }))
+}
 
-  questions.forEach((question) => {
-    if (answers[question.id] === question.answer) {
-      score++
+export function gradeQuestions(questions, selectedAnswers) {
+  const answers = questions.map((question) => {
+    const studentAnswer = selectedAnswers[question.id]
+    const correct = studentAnswer === question.answer
+    return {
+      questionId: question.id,
+      question: question.question,
+      choices: question.choices,
+      correctAnswer: question.answer,
+      studentAnswer,
+      correct,
+      feedback: correct ? question.feedback : `Correct answer: ${question.answer}. ${question.feedback}`,
     }
   })
 
-  return score
-}
-
-export function getPercentage(score, total) {
-  if (total === 0) return 0
-  return Math.round((score / total) * 100)
+  return {
+    score: answers.filter((answer) => answer.correct).length,
+    total: answers.length,
+    answers,
+  }
 }

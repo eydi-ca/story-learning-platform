@@ -1,84 +1,46 @@
-import { Link, useNavigate } from 'react-router-dom'
-import { getAllProgress, isAdminLoggedIn, logoutAdmin } from '../utils/storage'
+import { getClasses, getProgressRecords, getUsers } from '../utils/storage'
+import { siteContent } from '../data/siteContent'
+
+function getMetrics() {
+  const users = getUsers()
+  const classes = getClasses()
+  const progress = getProgressRecords()
+  const averageScore = progress.length ? Math.round(progress.reduce((sum, item) => sum + item.percentage, 0) / progress.length) : 0
+  const passingRate = progress.length ? Math.round((progress.filter((item) => item.passed).length / progress.length) * 100) : 0
+  return {
+    teachers: users.filter((user) => user.role === 'teacher').length,
+    students: users.filter((user) => user.role === 'student').length,
+    classes: classes.length,
+    completions: progress.length,
+    averageScore,
+    passingRate,
+  }
+}
 
 function AdminDashboard() {
-  const navigate = useNavigate()
-
-  if (!isAdminLoggedIn()) {
-    navigate('/admin/login')
-    return null
-  }
-
-  const progress = getAllProgress()
-  const uniqueStudents = [...new Set(progress.map((item) => item.studentId))]
-  const completedActivities = progress.length
-
-  const passedCount = progress.filter((item) => item.passed).length
-  const failedCount = progress.filter((item) => !item.passed).length
-
-  function handleLogout() {
-    logoutAdmin()
-    navigate('/admin/login')
-  }
-
+  const metrics = getMetrics()
   return (
-    <main className="min-h-screen bg-slate-100">
-      <header className="bg-white shadow">
-        <div className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Admin Dashboard
-            </h1>
-            <p className="text-slate-600">Classroom Code: CLASS123</p>
-          </div>
-
-          <button
-            onClick={handleLogout}
-            className="rounded-xl bg-slate-900 text-white px-4 py-2"
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
-      <section className="max-w-6xl mx-auto px-6 py-10">
-        <div className="grid md:grid-cols-4 gap-5">
-          <div className="rounded-2xl bg-white p-6 shadow">
-            <p className="text-slate-500">Students</p>
-            <h2 className="text-3xl font-bold">{uniqueStudents.length}</h2>
-          </div>
-
-          <div className="rounded-2xl bg-white p-6 shadow">
-            <p className="text-slate-500">Completed Activities</p>
-            <h2 className="text-3xl font-bold">{completedActivities}</h2>
-          </div>
-
-          <div className="rounded-2xl bg-white p-6 shadow">
-            <p className="text-slate-500">Passed</p>
-            <h2 className="text-3xl font-bold text-green-700">
-              {passedCount}
-            </h2>
-          </div>
-
-          <div className="rounded-2xl bg-white p-6 shadow">
-            <p className="text-slate-500">Needs Improvement</p>
-            <h2 className="text-3xl font-bold text-red-700">{failedCount}</h2>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-2xl bg-white p-6 shadow">
-          <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
-
-          <Link
-            to="/admin/students"
-            className="inline-block rounded-xl bg-indigo-600 px-5 py-3 text-white font-semibold"
-          >
-            View Student Progress
-          </Link>
-        </div>
-      </section>
-    </main>
+    <section>
+      <h1 className="text-3xl font-black text-slate-950">{siteContent.dashboards.adminTitle}</h1>
+      <p className="mt-2 text-slate-600">{siteContent.dashboards.adminSubtitle}</p>
+      <div className="mt-6 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <Card label="Total Teachers" value={metrics.teachers} />
+        <Card label="Total Classes" value={metrics.classes} />
+        <Card label="Total Students" value={metrics.students} />
+        <Card label="Total Chapter Completions" value={metrics.completions} />
+        <Card label="Average Score" value={`${metrics.averageScore}%`} />
+        <Card label="Overall Passing Rate" value={`${metrics.passingRate}%`} />
+      </div>
+      <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-2xl font-black text-slate-950">Recent Learning Activity</h2>
+        <p className="mt-2 text-slate-600">{metrics.completions ? 'Activity is stored locally in this browser for the demo.' : 'No activity recorded yet.'}</p>
+      </div>
+    </section>
   )
+}
+
+function Card({ label, value }) {
+  return <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><p className="text-sm font-bold text-slate-500">{label}</p><p className="mt-2 text-3xl font-black text-slate-950">{value}</p></div>
 }
 
 export default AdminDashboard

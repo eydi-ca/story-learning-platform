@@ -1,28 +1,99 @@
-import { Link } from 'react-router-dom'
+function getStatusStyles(status, isCurrent) {
+  if (status === 'Passed') {
+    return 'border-emerald-200 bg-emerald-50'
+  }
 
-function ChapterCard({ chapter, isCompleted }) {
+  if (status === 'Locked') {
+    return 'border-slate-200 bg-slate-100 opacity-75'
+  }
+
+  return isCurrent
+    ? 'border-indigo-300 bg-indigo-50 shadow-lg shadow-indigo-100'
+    : 'border-sky-200 bg-sky-50'
+}
+
+function getBadgeStyles(status) {
+  if (status === 'Passed') return 'bg-emerald-100 text-emerald-700'
+  if (status === 'Locked') return 'bg-slate-200 text-slate-600'
+  return 'bg-indigo-100 text-indigo-700'
+}
+
+function ChapterCard({
+  chapter,
+  status,
+  result,
+  isCurrent,
+  onOpen,
+  disabled,
+  alignment = 'left',
+  needsRetry = false,
+}) {
+  const containerPosition =
+    alignment === 'right' ? 'md:col-start-3 md:text-left' : 'md:col-start-1'
+
   return (
-    <Link
-      to={`/student/chapter/${chapter.id}`}
-      className="block rounded-2xl bg-white p-6 shadow hover:shadow-lg transition border border-slate-100"
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-xl font-bold text-slate-900">{chapter.title}</h3>
-          <p className="mt-2 text-slate-600">{chapter.description}</p>
+    <div className={`relative ${containerPosition}`}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onOpen}
+        className={`w-full rounded-3xl border p-6 text-left transition ${
+          disabled ? 'cursor-not-allowed' : 'hover:-translate-y-1 hover:shadow-xl'
+        } ${getStatusStyles(status, isCurrent)}`}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Chapter {chapter.order}
+            </p>
+            <h3 className="mt-2 text-2xl font-bold text-slate-900">
+              {chapter.title}
+            </h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {chapter.shortDescription}
+            </p>
+          </div>
+
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-bold ${getBadgeStyles(
+              status
+            )}`}
+          >
+            {status}
+          </span>
         </div>
 
-        <span
-          className={`text-xs px-3 py-1 rounded-full ${
-            isCompleted
-              ? 'bg-green-100 text-green-700'
-              : 'bg-yellow-100 text-yellow-700'
-          }`}
-        >
-          {isCompleted ? 'Completed' : 'Not yet'}
-        </span>
-      </div>
-    </Link>
+        <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-600">
+          <span className="rounded-full bg-white/70 px-3 py-1">
+            {chapter.duration}
+          </span>
+          <span className="rounded-full bg-white/70 px-3 py-1">
+            Passing score: {chapter.passingScore}/{chapter.activities.length}
+          </span>
+          {result ? (
+            <span className="rounded-full bg-white/70 px-3 py-1">
+              Latest score: {result.score}/{result.total}
+            </span>
+          ) : null}
+        </div>
+
+        {needsRetry ? (
+          <p className="mt-4 text-sm font-semibold text-amber-700">
+            Retry this chapter to unlock the next one.
+          </p>
+        ) : null}
+
+        <div className="mt-5">
+          <span className="text-sm font-semibold text-slate-800">
+            {status === 'Passed'
+              ? 'Review chapter'
+              : disabled
+                ? 'Complete the previous chapter first'
+                : 'Open chapter'}
+          </span>
+        </div>
+      </button>
+    </div>
   )
 }
 

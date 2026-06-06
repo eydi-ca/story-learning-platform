@@ -1,182 +1,75 @@
-import { useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import TypewriterText from '../components/TypewriterText'
 import { chapters } from '../data/chapters'
-import { getStudent, saveProgress } from '../utils/storage'
-import { calculateScore, getPercentage, shuffleArray } from '../utils/quizUtils'
-import DialogueBox from '../components/DialogueBox'
-import AudioPlayer from '../components/AudioPlayer'
-import QuizCard from '../components/QuizCard'
+import { getCurrentUser } from '../utils/auth'
+import { getOrSetActiveClass } from '../utils/classUtils'
+import { isChapterUnlocked } from '../utils/progress'
 
 function ChapterPage() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const student = getStudent()
+  const { chapterId } = useParams()
+  const [dialogueIndex, setDialogueIndex] = useState(0)
+  const user = getCurrentUser()
+  const activeClass = getOrSetActiveClass(user.id)
+  const chapter = chapters.find((item) => item.id === chapterId)
 
-  const chapter = chapters.find((item) => item.id === id)
-
-  const [step, setStep] = useState('story')
-  const [answers, setAnswers] = useState({})
-
-  const randomizedQuestions = useMemo(() => {
-    if (!chapter) return []
-    return shuffleArray(chapter.activities)
-  }, [chapter])
-
-  if (!student) {
-    navigate('/student/start')
-    return null
+  if (!chapter || !activeClass) return <Navigate to="/student/chapters" replace />
+  if (!isChapterUnlocked(user.id, activeClass.classCode, chapter.id)) {
+    return <Navigate to="/student/chapters" replace />
   }
 
-  if (!chapter) {
-    return (
-      <main className="min-h-screen flex items-center justify-center">
-        <p>Chapter not found.</p>
-      </main>
-    )
-  }
-
-  function handleAnswer(questionId, answer) {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionId]: answer,
-    }))
-  }
-
-  function handleSubmitQuiz() {
-    const score = calculateScore(randomizedQuestions, answers)
-    const percentage = getPercentage(score, randomizedQuestions.length)
-    const passed = score >= chapter.passingScore
-
-    const result = {
-      studentId: student.id,
-      studentName: student.name,
-      classCode: student.classCode,
-      chapterId: chapter.id,
-      chapterTitle: chapter.title,
-      score,
-      total: randomizedQuestions.length,
-      percentage,
-      passed,
-      answers,
-      completedAt: new Date().toISOString(),
-      timeSpent: 'Demo only',
-    }
-
-    saveProgress(result)
-    navigate(`/student/result/${chapter.id}`)
-  }
-
-  const allAnswered = randomizedQuestions.every((q) => answers[q.id])
+  const dialogue = chapter.dialogues[dialogueIndex]
+  const finishedDialogue = dialogueIndex >= chapter.dialogues.length - 1
 
   return (
-    <main className="min-h-screen bg-slate-100 px-6 py-10">
-      <section className="max-w-4xl mx-auto">
-        <button
-          onClick={() => navigate('/student/chapters')}
-          className="mb-6 text-indigo-700 font-semibold"
-        >
-          ← Back to chapters
-        </button>
-
-        <div className="rounded-3xl bg-white p-6 shadow">
-          <h1 className="text-3xl font-bold text-slate-900">{chapter.title}</h1>
-          <p className="mt-2 text-slate-600">{chapter.description}</p>
+    <section>
+      <Link className="font-bold text-sky-700" to="/student/chapters">Back to story timeline</Link>
+      <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="min-h-[420px] p-6 text-white" style={{ background: chapter.scene.gradient }}>
+          <div className="flex min-h-[340px] flex-col justify-between">
+            <div>
+              <p className="font-bold uppercase tracking-widest text-white/80">{chapter.scene.location}</p>
+              <h1 className="mt-2 text-4xl font-black">{chapter.title}</h1>
+              <p className="mt-3 max-w-2xl text-white/90">{chapter.story.narration}</p>
+              {chapter.audioSrc ? <audio className="mt-4" controls src={chapter.audioSrc} /> : null}
+            </div>
+            <div className="grid gap-4 md:grid-cols-[180px_1fr] md:items-end">
+              <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-4 border-white/70 bg-white/25 text-center text-lg font-black shadow-xl">
+                {chapter.scene.mascotName}
+              </div>
+              <div className="rounded-2xl border border-white/40 bg-slate-950/80 p-5 shadow-2xl">
+                <p className="mb-2 font-black text-sky-200">{dialogue.speaker}</p>
+                <p className="min-h-16 text-lg leading-8">
+                  <TypewriterText key={dialogue.text} text={dialogue.text} />
+                </p>
+                <button
+                  className="mt-4 rounded-lg bg-white px-4 py-2 font-bold text-slate-950"
+                  onClick={() => finishedDialogue ? setDialogueIndex(0) : setDialogueIndex(dialogueIndex + 1)}
+                >
+                  {finishedDialogue ? 'Replay dialogue' : 'Next dialogue'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
-
-        <div className="mt-6 rounded-3xl bg-white p-6 shadow">
-          {step === 'story' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Story Narration</h2>
-              <p className="text-lg leading-relaxed text-slate-700">
-                {chapter.story.narration}
-              </p>
-
-              <div className="mt-5">
-                <AudioPlayer src={chapter.story.audioSrc} />
-              </div>
-
-              <button
-                onClick={() => setStep('dialogue')}
-                className="mt-6 rounded-xl bg-indigo-600 px-5 py-3 text-white font-semibold"
-              >
-                Continue to Dialogue
-              </button>
-            </div>
-          )}
-
-          {step === 'dialogue' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">RPG Dialogue</h2>
-
-              <div className="grid gap-4">
-                {chapter.dialogues.map((dialogue, index) => (
-                  <DialogueBox
-                    key={index}
-                    speaker={dialogue.speaker}
-                    text={dialogue.text}
-                  />
-                ))}
-              </div>
-
-              <button
-                onClick={() => setStep('tutorial')}
-                className="mt-6 rounded-xl bg-indigo-600 px-5 py-3 text-white font-semibold"
-              >
-                Continue to Tutorial
-              </button>
-            </div>
-          )}
-
-          {step === 'tutorial' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">
-                {chapter.tutorial.title}
-              </h2>
-
-              <p className="text-lg leading-relaxed text-slate-700">
-                {chapter.tutorial.content}
-              </p>
-
-              <button
-                onClick={() => setStep('activity')}
-                className="mt-6 rounded-xl bg-indigo-600 px-5 py-3 text-white font-semibold"
-              >
-                Start Activity
-              </button>
-            </div>
-          )}
-
-          {step === 'activity' && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Activity</h2>
-
-              <div className="grid gap-5">
-                {randomizedQuestions.map((question) => (
-                  <QuizCard
-                    key={question.id}
-                    question={question}
-                    selectedAnswer={answers[question.id]}
-                    onAnswer={handleAnswer}
-                  />
-                ))}
-              </div>
-
-              <button
-                disabled={!allAnswered}
-                onClick={handleSubmitQuiz}
-                className={`mt-6 rounded-xl px-5 py-3 text-white font-semibold ${
-                  allAnswered
-                    ? 'bg-indigo-600 hover:bg-indigo-700'
-                    : 'bg-slate-400 cursor-not-allowed'
-                }`}
-              >
-                Submit Activity
-              </button>
-            </div>
-          )}
+        <div className="p-6">
+          <div className="mb-6 rounded-xl bg-slate-50 p-5">
+            <h2 className="text-xl font-black text-slate-950">Story Background</h2>
+            <p className="mt-3 leading-7 text-slate-600">{chapter.story.background}</p>
+          </div>
+          <h2 className="text-2xl font-black text-slate-950">{chapter.tutorial.title}</h2>
+          <p className="mt-3 text-slate-600">{chapter.tutorial.summary}</p>
+          <ul className="mt-4 grid gap-3 md:grid-cols-3">
+            {chapter.tutorial.points.map((point) => (
+              <li className="rounded-xl bg-slate-50 p-4 font-semibold text-slate-700" key={point}>{point}</li>
+            ))}
+          </ul>
+          <Link className="mt-6 inline-block rounded-lg bg-slate-950 px-5 py-3 font-bold text-white" to={`/student/chapter/${chapter.id}/activity`}>
+            Continue to Activity
+          </Link>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
   )
 }
 
