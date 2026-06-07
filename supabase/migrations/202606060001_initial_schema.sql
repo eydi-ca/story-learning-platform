@@ -201,6 +201,50 @@ as $$
   );
 $$;
 
+create or replace function public.class_is_joinable(target_class_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.classes
+    where id = target_class_id
+      and status = 'active'
+  );
+$$;
+
+create or replace function public.find_active_class_by_code(lookup_code text)
+returns table (
+  id uuid,
+  teacher_id uuid,
+  class_name text,
+  description text,
+  class_code text,
+  status text,
+  created_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    c.id,
+    c.teacher_id,
+    c.class_name,
+    c.description,
+    c.class_code,
+    c.status,
+    c.created_at
+  from public.classes c
+  where c.class_code = upper(trim(lookup_code))
+    and c.status = 'active'
+  limit 1;
+$$;
+
 alter table public.profiles enable row level security;
 alter table public.classes enable row level security;
 alter table public.class_memberships enable row level security;
@@ -216,6 +260,7 @@ grant select, insert, update, delete on public.classes to authenticated;
 grant select, insert, update, delete on public.class_memberships to authenticated;
 grant select, insert, update, delete on public.chapter_progress to authenticated;
 grant select, insert, update, delete on public.activity_results to authenticated;
+grant execute on function public.find_active_class_by_code(text) to authenticated;
 
 create policy "profiles select self teacher admin"
 on public.profiles
@@ -284,7 +329,7 @@ with check (
   public.is_admin()
   or (
     student_id = auth.uid()
-    and exists (select 1 from public.classes c where c.id = class_memberships.class_id and c.status = 'active')
+    and public.class_is_joinable(class_memberships.class_id)
   )
 );
 

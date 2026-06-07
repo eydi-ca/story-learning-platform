@@ -64,10 +64,32 @@ export function selectActiveClass(studentId, classId) {
 export async function joinClass(studentId, classCode) {
   if (!classCode.trim()) return { error: 'Enter a class code.' }
 
-  const classroom = findClassByCode(classCode)
-  if (!classroom) return { error: 'That class code does not exist.' }
-
   if (isSupabaseConfigured) {
+    const cleanCode = classCode.trim().toUpperCase()
+    const { data: remoteClassroom, error: classError } = await supabase
+      .rpc('find_active_class_by_code', {
+        lookup_code: cleanCode,
+      })
+      .maybeSingle()
+
+    if (classError) {
+      return { error: classError.message }
+    }
+
+    if (!remoteClassroom) {
+      return { error: 'That class code does not exist.' }
+    }
+
+    const classroom = {
+      id: remoteClassroom.id,
+      teacherId: remoteClassroom.teacher_id,
+      className: remoteClassroom.class_name,
+      description: remoteClassroom.description ?? '',
+      classCode: remoteClassroom.class_code,
+      createdAt: remoteClassroom.created_at,
+      status: remoteClassroom.status ?? 'active',
+    }
+
     const { error } = await supabase.from('class_memberships').insert({
       student_id: studentId,
       class_id: classroom.id,
@@ -86,6 +108,9 @@ export async function joinClass(studentId, classCode) {
       message: error ? 'You already joined this class. It is now selected.' : undefined,
     }
   }
+
+  const classroom = findClassByCode(classCode)
+  if (!classroom) return { error: 'That class code does not exist.' }
 
   const duplicate = getMemberships().find(
     (membership) => membership.studentId === studentId && membership.classId === classroom.id
