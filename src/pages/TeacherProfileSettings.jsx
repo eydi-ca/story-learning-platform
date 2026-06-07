@@ -17,20 +17,20 @@ function TeacherProfileSettings() {
 
   return (
     <section>
-      <h1 className="text-3xl font-black text-slate-950">Profile Settings</h1>
-      <form className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm" onSubmit={handleSubmit}>
-        <label className="block text-sm font-bold text-slate-700">Display name
+      <h1 className="magic-heading text-3xl font-black">Profile Settings</h1>
+      <form className="parchment-surface mt-6 rounded-[24px] p-6" onSubmit={handleSubmit}>
+        <label className="block text-sm font-bold text-[color:var(--brown)]">Display name
           <input
-            className="mt-2 w-full max-w-md rounded-lg border border-slate-300 px-3 py-2"
+            className="mt-2 w-full max-w-md rounded-2xl border border-[color:var(--border)] bg-white/80 px-3 py-2 text-[color:var(--brown)]"
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
           />
         </label>
-        <h2 className="mt-6 text-sm font-bold text-slate-700">Choose Profile Image</h2>
+        <h2 className="mt-6 text-sm font-bold text-[color:var(--brown)]">Choose Profile Image</h2>
         <div className="mt-4">
           <AvatarPicker selectedAvatar={avatar} onChange={setAvatar} />
         </div>
-        <button className="mt-6 rounded-lg bg-slate-950 px-5 py-3 font-bold text-white">Save changes</button>
+        <button className="gold-button mt-6 rounded-2xl px-5 py-3 font-bold">Save changes</button>
       </form>
     </section>
   )

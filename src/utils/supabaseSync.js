@@ -11,6 +11,57 @@ import {
   setCurrentSession,
 } from './storage'
 
+function buildProfileFromSessionUser(user) {
+  return {
+    id: user.id,
+    full_name:
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split('@')[0] ||
+      'User',
+    email: user.email,
+    role: user.user_metadata?.role ?? null,
+    status: 'active',
+    avatar: user.user_metadata?.avatar || 'rainbow_guardian',
+    created_at: user.created_at ?? new Date().toISOString(),
+  }
+}
+
+async function ensureProfileForSessionUser(user) {
+  const { data: existingProfile, error: existingProfileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (existingProfileError) throw existingProfileError
+  if (existingProfile) return existingProfile
+
+  const fallbackProfile = buildProfileFromSessionUser(user)
+  const { data: insertedProfile, error: insertError } = await supabase
+    .from('profiles')
+    .upsert(
+      {
+        id: fallbackProfile.id,
+        full_name: fallbackProfile.full_name,
+        email: fallbackProfile.email,
+        role: fallbackProfile.role,
+        status: fallbackProfile.status,
+        avatar: fallbackProfile.avatar,
+      },
+      { onConflict: 'id' }
+    )
+    .select('*')
+    .maybeSingle()
+
+  if (insertError) throw insertError
+  if (!insertedProfile) {
+    throw new Error('We could not create your profile record. Please try again.')
+  }
+
+  return insertedProfile
+}
+
 function toLocalUser(profile) {
   return {
     id: profile.id,
@@ -108,13 +159,7 @@ export async function syncCurrentSessionData() {
     return { mode: 'supabase', user: null }
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', session.user.id)
-    .single()
-
-  if (profileError) throw profileError
+  const profile = await ensureProfileForSessionUser(session.user)
 
   const localUser = toLocalUser(profile)
   setCurrentSession({

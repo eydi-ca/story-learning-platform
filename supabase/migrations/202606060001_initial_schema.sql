@@ -153,6 +153,54 @@ as $$
   );
 $$;
 
+create or replace function public.teacher_owns_class(target_class_id uuid, target_teacher_id uuid default auth.uid())
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.classes
+    where id = target_class_id
+      and teacher_id = target_teacher_id
+  );
+$$;
+
+create or replace function public.student_is_member_of_class(target_class_id uuid, target_student_id uuid default auth.uid())
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.class_memberships
+    where class_id = target_class_id
+      and student_id = target_student_id
+      and active = true
+  );
+$$;
+
+create or replace function public.teacher_has_student(target_teacher_id uuid, target_student_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.classes c
+    join public.class_memberships m on m.class_id = c.id
+    where c.teacher_id = target_teacher_id
+      and m.student_id = target_student_id
+      and m.active = true
+  );
+$$;
+
 alter table public.profiles enable row level security;
 alter table public.classes enable row level security;
 alter table public.class_memberships enable row level security;
@@ -178,12 +226,7 @@ using (
   or public.is_admin()
   or (
     public.is_teacher()
-    and exists (
-      select 1
-      from public.classes c
-      join public.class_memberships m on m.class_id = c.id
-      where c.teacher_id = auth.uid() and m.student_id = profiles.id
-    )
+    and public.teacher_has_student(auth.uid(), profiles.id)
   )
 );
 
@@ -201,10 +244,7 @@ to authenticated
 using (
   public.is_admin()
   or teacher_id = auth.uid()
-  or exists (
-    select 1 from public.class_memberships m
-    where m.class_id = classes.id and m.student_id = auth.uid()
-  )
+  or public.student_is_member_of_class(classes.id, auth.uid())
 );
 
 create policy "teachers insert classes"
@@ -233,10 +273,7 @@ to authenticated
 using (
   public.is_admin()
   or student_id = auth.uid()
-  or exists (
-    select 1 from public.classes c
-    where c.id = class_memberships.class_id and c.teacher_id = auth.uid()
-  )
+  or public.teacher_owns_class(class_memberships.class_id, auth.uid())
 );
 
 create policy "students join classes"
@@ -247,7 +284,7 @@ with check (
   public.is_admin()
   or (
     student_id = auth.uid()
-    and exists (select 1 from public.classes c where c.id = class_memberships.class_id)
+    and exists (select 1 from public.classes c where c.id = class_memberships.class_id and c.status = 'active')
   )
 );
 
@@ -258,10 +295,7 @@ to authenticated
 using (
   public.is_admin()
   or student_id = auth.uid()
-  or exists (
-    select 1 from public.classes c
-    where c.id = class_memberships.class_id and c.teacher_id = auth.uid()
-  )
+  or public.teacher_owns_class(class_memberships.class_id, auth.uid())
 );
 
 create policy "chapters readable by everyone"
@@ -283,10 +317,7 @@ to authenticated
 using (
   public.is_admin()
   or student_id = auth.uid()
-  or exists (
-    select 1 from public.classes c
-    where c.id = chapter_progress.class_id and c.teacher_id = auth.uid()
-  )
+  or public.teacher_owns_class(chapter_progress.class_id, auth.uid())
 );
 
 create policy "students manage own progress"
@@ -303,10 +334,7 @@ to authenticated
 using (
   public.is_admin()
   or student_id = auth.uid()
-  or exists (
-    select 1 from public.classes c
-    where c.id = activity_results.class_id and c.teacher_id = auth.uid()
-  )
+  or public.teacher_owns_class(activity_results.class_id, auth.uid())
 );
 
 create policy "students manage own results"

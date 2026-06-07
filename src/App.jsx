@@ -9,11 +9,14 @@ import AdminClassStudents from './pages/AdminClassStudents'
 import AdminDashboard from './pages/AdminDashboard'
 import AdminLogin from './pages/AdminLogin'
 import AdminReports from './pages/AdminReports'
+import AdminSettings from './pages/AdminSettings'
 import AdminStudents from './pages/AdminStudents'
 import AdminTeacherClasses from './pages/AdminTeacherClasses'
 import AdminTeachers from './pages/AdminTeachers'
+import CheckEmailPage from './pages/CheckEmailPage'
 import ChapterPage from './pages/ChapterPage'
 import ChooseRolePage from './pages/ChooseRolePage'
+import EmailVerifiedPage from './pages/EmailVerifiedPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import ResultPage from './pages/ResultPage'
@@ -28,14 +31,14 @@ import TeacherClasses from './pages/TeacherClasses'
 import TeacherDashboard from './pages/TeacherDashboard'
 import TeacherProfile from './pages/TeacherProfile'
 import TeacherProfileSettings from './pages/TeacherProfileSettings'
-import { getCurrentUser, isAdminLoggedIn } from './utils/auth'
+import { getCurrentUser, getRedirectForUser, isAdminLoggedIn } from './utils/auth'
 
 function RoleGuard({ role, children }) {
   const user = getCurrentUser()
   if (!user) return <Navigate to="/login" replace />
   if (!user.role) return <Navigate to="/choose-role" replace />
   if (user.role !== role) {
-    return <Navigate to={user.role === 'student' ? '/student/chapters' : '/teacher/dashboard'} replace />
+    return <Navigate to={getRedirectForUser(user)} replace />
   }
   return children
 }
@@ -54,6 +57,8 @@ function App() {
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/choose-role" element={<ChooseRolePage />} />
         <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/auth/check-email" element={<CheckEmailPage />} />
+        <Route path="/auth/verified" element={<EmailVerifiedPage />} />
       </Route>
 
       <Route path="/student" element={<RoleGuard role="student"><StudentLayout /></RoleGuard>}>
@@ -85,6 +90,7 @@ function App() {
         <Route path="teachers/:teacherId/classes" element={<AdminTeacherClasses />} />
         <Route path="classes/:classId/students" element={<AdminClassStudents />} />
         <Route path="students" element={<AdminStudents />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

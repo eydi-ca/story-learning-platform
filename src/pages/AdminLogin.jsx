@@ -5,9 +5,10 @@ import { FIELD_LIMITS, getAdminLoginGuard, loginAdmin } from '../utils/auth'
 
 function AdminLogin() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ identifier: '', password: '' })
+  const [form, setForm] = useState({ email: '', password: '' })
   const [error, setError] = useState('')
   const [guard, setGuard] = useState(getAdminLoginGuard())
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (!guard.locked) return undefined
@@ -17,13 +18,23 @@ function AdminLogin() {
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const result = await loginAdmin(form)
-    if (result.error) {
-      setError(result.error)
+    setError('')
+    setIsSubmitting(true)
+
+    try {
+      const result = await loginAdmin(form)
+      if (result.error) {
+        setError(result.error)
+        setGuard(getAdminLoginGuard())
+        return
+      }
+      navigate('/admin/dashboard')
+    } catch {
+      setError('We could not complete your admin login. Please try again.')
       setGuard(getAdminLoginGuard())
-      return
+    } finally {
+      setIsSubmitting(false)
     }
-    navigate('/admin/dashboard')
   }
 
   return (
@@ -36,15 +47,17 @@ function AdminLogin() {
             Admin login is temporarily locked. Try again in {guard.secondsRemaining} seconds.
           </p>
         ) : null}
-        <label className="block text-sm font-bold text-slate-700" htmlFor="admin-identifier">Admin username/email
+        <label className="block text-sm font-bold text-slate-700" htmlFor="admin-email">Admin email
           <input
-            autoComplete="username"
+            autoComplete="email"
             className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
-            id="admin-identifier"
-            maxLength={FIELD_LIMITS.identifierMax}
-            placeholder="admin"
-            value={form.identifier}
-            onChange={(event) => setForm({ ...form, identifier: event.target.value })}
+            id="admin-email"
+            inputMode="email"
+            maxLength={FIELD_LIMITS.emailMax}
+            placeholder="admin@example.com"
+            type="email"
+            value={form.email}
+            onChange={(event) => setForm({ ...form, email: event.target.value })}
           />
         </label>
         <PasswordField
@@ -52,10 +65,10 @@ function AdminLogin() {
           value={form.password}
           onChange={(password) => setForm({ ...form, password })}
         />
-        <button className="gold-button w-full rounded-lg px-4 py-3 font-bold" disabled={guard.locked}>
-          Login
+        <button className="gold-button w-full rounded-lg px-4 py-3 font-bold" disabled={guard.locked || isSubmitting}>
+          {isSubmitting ? 'Signing In...' : 'Login'}
         </button>
-        <p className="text-sm text-slate-500">Demo admin: <span className="font-bold">admin</span> / <span className="font-bold">admin123</span></p>
+        <p className="text-sm text-slate-500">Use your admin email and password.</p>
       </form>
     </section>
   )

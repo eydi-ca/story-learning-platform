@@ -8,13 +8,13 @@ function TeacherProfile() {
   const classes = getTeacherClasses(teacher.id)
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="parchment-surface rounded-[24px] p-6">
       <AvatarBadge avatarId={teacher.avatar} size="lg" />
-      <h1 className="mt-4 text-3xl font-black text-slate-950">{teacher.fullName}</h1>
-      <p className="mt-1 text-slate-600">{teacher.email}</p>
-      <p className="mt-3 font-bold text-sky-700">Role: Teacher</p>
-      <p className="mt-3 text-slate-600">Total created classes: <span className="font-black">{classes.length}</span></p>
-      <Link className="mt-5 inline-block rounded-lg bg-slate-950 px-5 py-3 font-bold text-white" to="/teacher/profile/settings">
+      <h1 className="mt-4 text-3xl font-black text-[color:var(--brown)]">{teacher.fullName}</h1>
+      <p className="mt-1 text-[color:var(--muted)]">{teacher.email}</p>
+      <p className="mt-3 font-bold text-violet-700">Role: Teacher</p>
+      <p className="mt-3 text-[color:var(--muted)]">Total created classes: <span className="font-black text-[color:var(--brown)]">{classes.length}</span></p>
+      <Link className="gold-button mt-5 inline-block rounded-2xl px-5 py-3 font-bold" to="/teacher/profile/settings">
         Profile Settings
       </Link>
     </section>

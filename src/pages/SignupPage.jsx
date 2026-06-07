@@ -15,15 +15,31 @@ function SignupPage() {
     avatar: 'rainbow_guardian',
   })
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   async function handleSubmit(event) {
     event.preventDefault()
-    const result = await signupUser(form)
-    if (result.error) {
-      setError(result.error)
-      return
+    setError('')
+    setIsSubmitting(true)
+
+    try {
+      const result = await signupUser(form)
+      if (result.error) {
+        setError(result.error)
+        return
+      }
+      if (result.pendingVerification) {
+        navigate('/auth/check-email', {
+          state: { message: result.message, email: form.email.trim().toLowerCase() },
+        })
+        return
+      }
+      navigate('/choose-role')
+    } catch {
+      setError('We could not create your account. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
-    navigate('/choose-role')
   }
 
   return (
@@ -43,13 +59,15 @@ function SignupPage() {
             onChange={(event) => setForm({ ...form, fullName: event.target.value })}
           />
         </label>
-        <label className="block text-sm font-bold text-slate-700" htmlFor="signup-identifier">Email or Username
+        <label className="block text-sm font-bold text-slate-700" htmlFor="signup-email">Email
           <input
-            autoComplete="username"
+            autoComplete="email"
             className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
-            id="signup-identifier"
-            maxLength={FIELD_LIMITS.identifierMax}
-            placeholder="name@example.com or username"
+            id="signup-email"
+            inputMode="email"
+            maxLength={FIELD_LIMITS.emailMax}
+            placeholder="name@example.com"
+            type="email"
             value={form.email}
             onChange={(event) => setForm({ ...form, email: event.target.value })}
           />
@@ -78,7 +96,9 @@ function SignupPage() {
             />
           </div>
         </div>
-        <button className="w-full rounded-lg bg-slate-950 px-4 py-3 font-bold text-white">Create Account</button>
+        <button className="w-full rounded-lg bg-slate-950 px-4 py-3 font-bold text-white" disabled={isSubmitting}>
+          {isSubmitting ? 'Creating Account...' : 'Create Account'}
+        </button>
         <p className="text-sm text-slate-500">Already have an account? <Link className="font-bold text-sky-700" to="/login">Login here.</Link></p>
       </form>
     </section>

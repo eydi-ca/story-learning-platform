@@ -35,11 +35,44 @@ body {
   color: var(--text);
 }
 
+#root {
+  min-height: 100vh;
+}
+
 button,
 input,
 select,
 textarea {
   font: inherit;
+}
+
+button:not(:disabled),
+a,
+[role="button"],
+summary,
+label[for] {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
+a,
+button,
+[role="button"],
+summary {
+  transition: opacity 180ms ease;
+}
+
+a:hover,
+button:not(:disabled):hover,
+[role="button"]:hover,
+summary:hover {
+  opacity: 0.96;
 }
 
 .rainbow-line {
@@ -213,6 +246,287 @@ textarea {
 
 .animate-hero-rise {
   animation: hero-rise 700ms ease both;
+}
+
+.admin-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgb(241 245 249 / 0.85), transparent 18rem),
+    linear-gradient(180deg, #f3f5f7 0%, #eef2f5 100%);
+  color: #0f172a;
+}
+
+.admin-sidebar {
+  background:
+    linear-gradient(180deg, #2d3748 0%, #1f2937 100%);
+  border-right: 1px solid rgb(255 255 255 / 0.06);
+  box-shadow: 0 18px 40px rgb(15 23 42 / 0.12);
+}
+
+.admin-card {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 10px 30px rgb(15 23 42 / 0.05);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+.admin-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 16px 36px rgb(15 23 42 / 0.08);
+}
+
+.admin-panel {
+  border: 1px solid #e2e8f0;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 10px 30px rgb(15 23 42 / 0.04);
+}
+
+.admin-topbar-panel {
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.92), rgb(250 250 249 / 0.9));
+  box-shadow: 0 10px 26px rgb(15 23 42 / 0.04);
+}
+
+.admin-modal-surface {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 24px 60px rgb(15 23 42 / 0.18);
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  color: #cbd5e1;
+  border: 1px solid transparent;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.admin-nav-link:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.08);
+  transform: translateX(2px);
+}
+
+.admin-nav-link-active {
+  color: #fff;
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.12);
+}
+
+.admin-primary-button {
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #fff;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.admin-primary-button:hover {
+  background: #1e293b;
+  border-color: #1e293b;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px rgb(15 23 42 / 0.14);
+}
+
+.admin-secondary-button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.admin-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbe3ea;
+  background: #fff;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.admin-icon-button:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.admin-sidebar-icon-button {
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.06);
+  color: #e2e8f0;
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.admin-sidebar-icon-button:hover {
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.18);
+  transform: translateY(-1px);
+}
+
+.admin-secondary-button:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+  transform: translateY(-1px);
+}
+
+.admin-input,
+.admin-select {
+  border: 1px solid #cbd5e1;
+  background: rgb(255 255 255 / 0.96);
+  color: #0f172a;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.admin-input:focus,
+.admin-select:focus {
+  outline: none;
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgb(15 23 42 / 0.08);
+}
+
+.admin-table thead {
+  background: #f8fafc;
+}
+
+.admin-table tbody tr {
+  border-top: 1px solid #e2e8f0;
+  transition: background-color 180ms ease;
+}
+
+.admin-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.admin-overlay {
+  background: rgb(15 23 42 / 0.4);
+  backdrop-filter: blur(2px);
+}
+
+.admin-sidebar-transition {
+  transition:
+    width 240ms ease,
+    transform 240ms ease,
+    opacity 180ms ease;
+}
+
+.teacher-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgb(255 216 107 / 0.2), transparent 24rem),
+    radial-gradient(circle at bottom right, rgb(123 97 168 / 0.12), transparent 20rem),
+    linear-gradient(180deg, #fff7e7 0%, #fff3d6 48%, #f6e0ab 100%);
+  color: var(--text);
+}
+
+.teacher-sidebar {
+  background:
+    linear-gradient(180deg, rgb(92 55 27 / 0.96), rgb(74 42 22 / 0.98));
+  border-right: 1px solid rgb(255 255 255 / 0.08);
+  box-shadow: 0 18px 42px rgb(74 42 22 / 0.2);
+}
+
+.teacher-sidebar-transition {
+  transition:
+    width 240ms ease,
+    transform 240ms ease,
+    opacity 180ms ease;
+}
+
+.teacher-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.9rem;
+  color: rgb(255 244 214 / 0.86);
+  border: 1px solid transparent;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.teacher-nav-link:hover {
+  color: #fff;
+  background: rgb(255 255 255 / 0.08);
+  border-color: rgb(255 255 255 / 0.12);
+  transform: translateX(2px);
+}
+
+.teacher-nav-link-active {
+  color: #fff;
+  background: rgb(255 216 107 / 0.16);
+  border-color: rgb(255 216 107 / 0.24);
+}
+
+.teacher-sidebar-icon-button {
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.06);
+  color: rgb(255 244 214 / 0.92);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.teacher-sidebar-icon-button:hover {
+  background: rgb(255 255 255 / 0.12);
+  border-color: rgb(255 255 255 / 0.18);
+  transform: translateY(-1px);
+}
+
+.teacher-secondary-button {
+  border: 1px solid rgb(216 185 120 / 0.7);
+  background: rgb(255 255 255 / 0.72);
+  color: var(--brown);
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+
+.teacher-secondary-button:hover {
+  background: rgb(255 255 255 / 0.9);
+  border-color: rgb(200 148 78 / 0.8);
+  transform: translateY(-1px);
+}
+
+.teacher-topbar-panel {
+  border: 1px solid rgb(216 185 120 / 0.55);
+  background:
+    radial-gradient(circle at top right, rgb(255 216 107 / 0.18), transparent 16rem),
+    linear-gradient(180deg, rgb(255 249 232 / 0.95), rgb(255 244 214 / 0.92));
+  box-shadow: 0 10px 26px rgb(74 42 22 / 0.08);
+}
+
+.teacher-overlay {
+  background: rgb(43 26 16 / 0.42);
+  backdrop-filter: blur(2px);
 }
 
 @keyframes hero-rise {
