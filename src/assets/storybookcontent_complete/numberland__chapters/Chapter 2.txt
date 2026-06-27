@@ -1,0 +1,40 @@
+Chapter 2
+The Whole Number Gate (W)
+
+I followed the glowing path out of the forest.
+At its edge stood a massive gate shaped like 0.
+In front of it stood Zero itself, silently guarding the entrance.
+
+------
+
+Three glowing sets appeared in the air.
+
+System Message:
+"Whole Numbers = Counting Numbers + 0"
+
+System Instruction:
+"Identify the set of whole numbers."
+
+-------
+
+I examined them carefully.
+Set A had negatives. 
+Set B had fractions and decimals.
+Set C had only whole numbers.
+I selected Set C.
+
+System Message:
+"Whole Number Gate Trial complete."
+
+----
+
+The zero-shaped glowed brightly and slowly opened.
+A blue gem floated into my hands.
+
+System Message:
+"Sacred Gem Acquired: W"
+Map Update:
+The Portal Gate unlocks.
+
+----
+

@@ -1,0 +1,33 @@
+Chapter 1
+The Counting Forest (N)
+
+I landed in a quiet forest. At its center stood a broken stone altar with dark, empty slots. Scattered around it were glowing numbers:
+
+
+System Message:
+"Counting Numbers detected: Positive whole numbers only."
+
+System Alert:
+"Forest altar requires counting numbers to activate."
+
+------
+
+I realized the problem immediately.
+Counting numbers start at 1 and go up. No Zero.
+No negatives. No fractions.
+I placed 1, 2, 3, 4 and 5 into the alter.
+
+System Instruction:
+"Select and place only counting numbers"
+
+-----
+
+After completing the task, a light flowed through the forest.
+A green gem rose from the altar and floated into my hand.
+
+System Message:
+Sacred Gem Acquired: N.
+
+-----
+
+

@@ -1,0 +1,72 @@
+Chapter 4
+The Rational & Irrational Countries (Q vs Q')
+
+As I walked beyond the Town of Integers, the land slowly changed. The buildings of whole numbers faded, and I found myself standing at the edge of a wide circular zone filled with a new set of numbers, fractions. I looked around. before I could speak, a message appeared...
+
+System Message:
+Current Location: Fraction District
+Surrounding Zones Detected:
+- Decimal District
+- Percentage District
+
+----
+
+System Note:
+The three districts circle the town of integers. They contain numbers that are not whole but still belong to the Rational Country.
+
+Decimal District - Numbers written in decimal form (Terminating and repeating) (e.g, 0.6, 5.4, 3.777)
+
+Fraction District - Numbers written as fractions (e.g, 3/4, 1/4, 8/9)
+
+Percent District - Numbers written as percentages (e.g, 60%, 75%, 16.66%)
+
+System note:
+Rational Country is composed of any number that can be written as a fraction in the form a/b where:
+- a and b are integers
+- b not equal 0
+
+System Tip: If the decimal stops or repeats, it is rational.
+
+----
+
+I walked around the district and I saw a bridge going to an unknown island.
+
+System Message: 
+Beyond the bridge is the Irrational Country
+
+----
+
+System Note:
+Irrational Country composed of those numbers that cannot be written in fraction form. These include non-repeating decimals.
+
+Non-repeating decimal and non-terminating decimal examples: (page 19)
+
+System Tip: If the decimal never stops and never repeats, it is irrational.
+
+-----
+
+As I looked at the bridge, I noticed numbers running toward my direction.
+
+System Message: 
+Some numbers have attempted to enter the Rational Country. 
+Do not allow irrational numbers to pass through.
+The system highlighted the intruders on the bridge.
+
+System Message:
+"Boundary instability detected."
+"Rational numbers can be written as fraction of integers."
+"Irrational numbers cannot be written as fractions."
+
+System Message:
+Border Verification
+"Verify these intruders: 1.6666...., 1, 0.75, (page20)
+
+------
+
+I guided 1, 0.75, and 1.6666... inside.
+I led ... to the Irrational Country
+
+System Feedback:
+"Boundary secured."
+System Message:
+"Sacred Gems Acquired: Q & Q'."

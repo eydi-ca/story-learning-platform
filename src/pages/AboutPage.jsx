@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import landingPhoto from '../assets/landingpage-photo.png'
+import previewPhoto from '../assets/cover.png'
 import { siteContent } from '../data/siteContent'
 
 const experienceIcons = {
@@ -36,8 +37,8 @@ function AboutPage() {
         <section className="mt-10 grid gap-8 lg:grid-cols-[410px_1fr] lg:items-center">
           <div className="parchment-surface interactive-card rounded-xl p-3">
             <img
-              className="aspect-square w-full rounded-lg object-cover"
-              src={landingPhoto}
+              className="max-h-[28rem] w-full rounded-lg object-contain"
+              src={previewPhoto}
               alt="Alvin entering a magical number storybook"
             />
           </div>

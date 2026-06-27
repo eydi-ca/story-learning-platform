@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   progress: 'story_app_progress',
   results: 'story_app_results',
   activeClass: 'story_app_active_class',
+  chapterTiming: 'story_app_chapter_timing',
+  chapterAttemptSessions: 'story_app_chapter_attempt_sessions',
 }
 
 export const ADMIN_CREDENTIALS = {

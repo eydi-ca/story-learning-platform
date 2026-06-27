@@ -7,7 +7,12 @@ import nomadAvatar from '../assets/profiles/nomad_avatar.png'
 import rogueAvatar from '../assets/profiles/rogue_avatar.png'
 import wizardAvatar from '../assets/profiles/wizard_avatar.png'
 
-export const avatars = [
+import emman from '../assets/team_profiles/emman.png'
+import mark from '../assets/team_profiles/mark.jpg'
+import adrian from '../assets/team_profiles/adrian.jpg'
+import jack from '../assets/team_profiles/jack.jpg'
+
+export const fantasyAvatars = [
   { id: 'forest_archer', name: 'Forest Archer', initials: 'FA', src: archerAvatar, color: 'bg-emerald-600' },
   { id: 'wise_wizard', name: 'Wise Wizard', initials: 'WW', src: wizardAvatar, color: 'bg-indigo-600' },
   { id: 'silver_knight', name: 'Silver Knight', initials: 'SK', src: knightAvatar, color: 'bg-slate-600' },
@@ -17,6 +22,15 @@ export const avatars = [
   { id: 'scholar_mage', name: 'Scholar Mage', initials: 'SM', src: mageAvatar, color: 'bg-sky-700' },
   { id: 'rainbow_guardian', name: 'Rainbow Bridge Guardian', initials: 'RG', src: guardianAvatar, color: 'bg-fuchsia-700' },
 ]
+
+export const teamAvatars = [
+  { id: 'emman', name: 'Emman', initials: 'E', src: emman, color: 'bg-blue-600' },
+  { id: 'mark', name: 'Mark', initials: 'M', src: mark, color: 'bg-green-600' },
+  { id: 'adrian', name: 'Adrian', initials: 'A', src: adrian, color: 'bg-yellow-600' },
+  { id: 'jack', name: 'Jack', initials: 'J', src: jack, color: 'bg-red-600' },
+]
+
+export const avatars = [...fantasyAvatars, ...teamAvatars]
 
 export function getAvatar(avatarId) {
   return avatars.find((avatar) => avatar.id === avatarId) ?? avatars[0]

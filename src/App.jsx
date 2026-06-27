@@ -19,6 +19,7 @@ import ChooseRolePage from './pages/ChooseRolePage'
 import EmailVerifiedPage from './pages/EmailVerifiedPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
+import ProloguePage from './pages/ProloguePage'
 import ResultPage from './pages/ResultPage'
 import SignupPage from './pages/SignupPage'
 import StudentChaptersPage from './pages/StudentChaptersPage'
@@ -65,6 +66,7 @@ function App() {
         <Route index element={<Navigate to="/student/chapters" replace />} />
         <Route path="join-class" element={<StudentJoinClassPage />} />
         <Route path="chapters" element={<StudentChaptersPage />} />
+        <Route path="prologue" element={<ProloguePage />} />
         <Route path="chapter/:chapterId" element={<ChapterPage />} />
         <Route path="chapter/:chapterId/activity" element={<ActivityPage />} />
         <Route path="result/:chapterId" element={<ResultPage />} />

@@ -529,6 +529,314 @@ summary:hover {
   backdrop-filter: blur(2px);
 }
 
+.story-scene-shell {
+  background:
+    radial-gradient(circle at top left, rgb(255 216 107 / 0.16), transparent 14rem),
+    linear-gradient(135deg, #fff6e0, #fae7b6);
+}
+
+.chapter-player-shell {
+  padding-top: 0.2rem;
+}
+
+.chapter-tile {
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.chapter-tile:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 22px 50px rgb(15 23 42 / 0.16);
+}
+
+.chapter-tile-image {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform: scale(1);
+  transition: transform 420ms ease;
+}
+
+.chapter-tile:hover .chapter-tile-image {
+  transform: scale(1.08);
+}
+
+.chapter-tile-overlay {
+  background:
+    linear-gradient(180deg, rgb(15 23 42 / 0.12), rgb(15 23 42 / 0.66));
+}
+
+.story-scene {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.14) transparent;
+}
+
+.story-scene::-webkit-scrollbar {
+  width: 7px;
+}
+
+.story-scene::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.story-scene::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.story-scene::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 0.18);
+}
+
+.story-scene-glow {
+  background:
+    radial-gradient(circle at 20% 18%, rgb(255 255 255 / 0.28), transparent 18rem),
+    radial-gradient(circle at 80% 25%, rgb(255 216 107 / 0.18), transparent 16rem);
+}
+
+.story-scene-bottom-shade {
+  background: linear-gradient(180deg, transparent 0%, rgb(15 23 42 / 0.15) 24%, rgb(15 23 42 / 0.72) 100%);
+}
+
+.story-scene-float {
+  animation: story-float-in 760ms ease both;
+}
+
+.story-scene-skip-button {
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: rgb(15 23 42 / 0.38);
+  box-shadow: 0 12px 28px rgb(15 23 42 / 0.24);
+  backdrop-filter: blur(10px);
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.story-scene-skip-button:hover {
+  transform: translateY(-1px);
+  background: rgb(15 23 42 / 0.5);
+  border-color: rgb(255 255 255 / 0.24);
+}
+
+.story-portrait-entrance {
+  animation: story-panel-rise 700ms ease 160ms both;
+}
+
+.story-dialogue-entrance {
+  animation: story-panel-rise 700ms ease 280ms both;
+}
+
+.story-portrait-ring {
+  position: relative;
+}
+
+.story-portrait-ring::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+  border-radius: 2rem;
+  background: radial-gradient(circle, rgb(255 216 107 / 0.28), transparent 70%);
+  z-index: -1;
+}
+
+.story-dialogue-panel {
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background:
+    linear-gradient(180deg, rgb(15 23 42 / 0.78), rgb(15 23 42 / 0.88));
+  box-shadow: 0 24px 50px rgb(15 23 42 / 0.32);
+  padding: 0.85rem 1rem;
+}
+
+.story-inline-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: rgb(255 255 255 / 0.04);
+  box-shadow: 0 12px 24px rgb(15 23 42 / 0.22);
+}
+
+.story-summary-panel {
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background:
+    linear-gradient(180deg, rgb(15 23 42 / 0.68), rgb(15 23 42 / 0.82));
+  box-shadow: 0 24px 50px rgb(15 23 42 / 0.3);
+  backdrop-filter: blur(16px);
+}
+
+.story-summary-card {
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.04);
+}
+
+.story-question-chip {
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.08);
+  color: rgb(255 255 255 / 0.78);
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    border-color 180ms ease;
+}
+
+.story-question-chip:hover {
+  transform: translateY(-1px);
+  background: rgb(255 255 255 / 0.12);
+}
+
+.story-question-chip-active {
+  border-color: rgb(255 216 107 / 0.6);
+  background: rgb(255 216 107 / 0.2);
+  color: white;
+}
+
+.story-match-board {
+  backdrop-filter: blur(8px);
+}
+
+.story-match-node {
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.05);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.story-match-node:hover {
+  transform: translateY(-2px);
+  border-color: rgb(255 216 107 / 0.5);
+  background: rgb(255 255 255 / 0.08);
+  box-shadow: 0 16px 28px rgb(15 23 42 / 0.18);
+}
+
+.story-match-node-active {
+  border-color: rgb(125 211 252 / 0.7);
+  background: rgb(125 211 252 / 0.12);
+  box-shadow: 0 0 0 3px rgb(125 211 252 / 0.16);
+}
+
+.story-match-node-filled {
+  border-color: rgb(255 216 107 / 0.45);
+}
+
+.story-lesson-badge {
+  border: 1px solid rgb(216 185 120 / 0.6);
+  background:
+    radial-gradient(circle at top right, rgb(255 216 107 / 0.18), transparent 14rem),
+    rgb(255 249 232 / 0.9);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.35);
+}
+
+.story-lesson-card,
+.story-activity-card {
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.02));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.03),
+    0 12px 28px rgb(15 23 42 / 0.18);
+}
+
+.story-activity-entrance {
+  animation: story-panel-rise 680ms ease both;
+}
+
+.story-answer-option,
+.story-drag-tile,
+.story-drop-item,
+.story-mini-action {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
+.story-answer-option:hover,
+.story-drag-tile:hover,
+.story-drop-item:hover,
+.story-mini-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgb(74 42 22 / 0.12);
+}
+
+.story-drag-tile,
+.story-drop-item,
+.story-mini-action {
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.06);
+  color: white;
+}
+
+.story-drop-zone {
+  border-color: rgb(255 255 255 / 0.16);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.02));
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease;
+}
+
+.story-drop-zone-active {
+  border-color: rgb(242 165 26 / 0.9);
+  box-shadow: 0 0 0 4px rgb(255 216 107 / 0.22);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.04));
+}
+
+@keyframes story-panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes story-float-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .story-dialogue-stack {
+    padding-bottom: 0.25rem;
+  }
+
+  .story-dialogue-panel {
+    padding: 0.8rem 0.9rem;
+  }
+
+  .story-scene {
+    animation-duration: 16s;
+  }
+
+  .story-inline-avatar {
+    width: 3.35rem;
+    height: 3.35rem;
+  }
+}
+
 @keyframes hero-rise {
   from {
     opacity: 0;
@@ -547,13 +855,22 @@ summary:hover {
 
   .interactive-card,
   .interactive-button,
-  .animate-hero-rise {
+  .animate-hero-rise,
+  .story-scene,
+  .story-scene-float,
+  .story-dialogue-entrance,
+  .story-portrait-entrance,
+  .story-activity-entrance {
     animation: none;
     transition: none;
   }
 
   .interactive-card:hover,
-  .interactive-button:hover {
+  .interactive-button:hover,
+  .story-answer-option:hover,
+  .story-drag-tile:hover,
+  .story-drop-item:hover,
+  .story-mini-action:hover {
     transform: none;
   }
 }

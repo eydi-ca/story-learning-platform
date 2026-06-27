@@ -3,7 +3,7 @@ import { chapters } from '../data/chapters'
 import { siteContent } from '../data/siteContent'
 import { getCurrentUser } from '../utils/auth'
 import { getOrSetActiveClass } from '../utils/classUtils'
-import { getLatestResult } from '../utils/progress'
+import { formatElapsedTime, getLatestResult } from '../utils/progress'
 
 function ResultPage() {
   const { chapterId } = useParams()
@@ -25,12 +25,30 @@ function ResultPage() {
     )
   }
 
+  function displayAnswer(answer, fallback = 'No answer') {
+    if (Array.isArray(answer)) {
+      return answer.length ? answer.join(', ') : fallback
+    }
+
+    if (answer && typeof answer === 'object') {
+      return Object.entries(answer).length
+        ? Object.entries(answer)
+            .map(([left, right]) => `${left} → ${right}`)
+            .join('; ')
+        : fallback
+    }
+
+    return answer || fallback
+  }
+
   return (
     <section>
       <div className={`rounded-xl border p-6 shadow-sm ${result.passed ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
         <h1 className="text-3xl font-black text-slate-950">{result.passed ? siteContent.result.passedTitle : siteContent.result.failedTitle}</h1>
         <p className="mt-2 text-slate-700">Score: <span className="font-black">{result.score}/{result.total}</span> - Percentage: <span className="font-black">{result.percentage}%</span></p>
         <p className="mt-2 text-slate-600">Completed at {new Date(result.completedAt).toLocaleString()}</p>
+        <p className="mt-2 text-slate-600">Total chapter time: <span className="font-bold">{formatElapsedTime(result.totalElapsedMs)}</span></p>
+        {result.passedSubmittedAt ? <p className="mt-2 text-slate-600">Passed submission: <span className="font-bold">{new Date(result.passedSubmittedAt).toLocaleString()}</span></p> : null}
         <p className="mt-3 font-semibold text-slate-800">
           {result.passed ? siteContent.result.passedMessage : siteContent.result.failedMessage}
         </p>
@@ -40,8 +58,8 @@ function ResultPage() {
         {result.answers.map((answer, index) => (
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" key={answer.questionId}>
             <p className="font-black text-slate-950">{index + 1}. {answer.question}</p>
-            <p className="mt-2 text-sm text-slate-600">Your answer: <span className="font-bold">{answer.studentAnswer}</span></p>
-            <p className="text-sm text-slate-600">Correct answer: <span className="font-bold">{answer.correctAnswer}</span></p>
+            <p className="mt-2 text-sm text-slate-600">Your answer: <span className="font-bold">{displayAnswer(answer.displayStudentAnswer ?? answer.studentAnswer)}</span></p>
+            <p className="text-sm text-slate-600">Correct answer: <span className="font-bold">{displayAnswer(answer.displayCorrectAnswer ?? answer.correctAnswer)}</span></p>
             <p className={`mt-2 font-semibold ${answer.correct ? 'text-emerald-700' : 'text-red-700'}`}>{answer.feedback}</p>
           </div>
         ))}

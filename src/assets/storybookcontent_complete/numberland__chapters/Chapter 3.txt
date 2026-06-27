@@ -1,0 +1,33 @@
+Chapter 3
+The Town of Integers
+
+As I stepped through the portal, I found myself in a circular town.
+
+System Message:
+"Welcome to the Town of Integers."
+"The left side is the Negative District."
+"The right side is in the Positive District."
+"At the center stands the Zero Portal, connected to the Counting Forest."
+
+----
+
+After a few moments, fractions and decimals had entered the town, causing chaos. Numbers wandered along the roads, confused and misplaced.
+
+System Message:
+"Integers consist of negative numbers, zero and positive numbers."
+"Arrange the numbers based on their correct placement in the town, and remove all non-integer numbers to solve the chaos."
+
+-----
+
+I fixed the town step by step.
+I placed 0 at the center.
+I guided the positive number to the right.
+I led negative numbers to the left.
+And I removed the Fractions and decimals from the town.
+The paths aligned. The town became calm.
+A red gem descended into my hands.
+
+System Message:
+"Sacred Gem Acquired: Z"
+
+----

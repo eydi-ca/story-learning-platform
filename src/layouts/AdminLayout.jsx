@@ -267,7 +267,8 @@ function AdminLayout() {
         onClose={() => setConfirmOpen(false)}
         onConfirm={async () => {
           await logoutAdmin()
-          navigate('/admin/login')
+          navigate('/login', {
+          })
         }}
       />
     </>

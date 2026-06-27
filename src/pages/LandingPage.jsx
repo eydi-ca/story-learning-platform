@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import AvatarBadge from '../components/AvatarBadge'
-import landingPhoto from '../assets/landingpage-photo.png'
-import { avatars } from '../data/avatars'
+import heroPhoto from '../assets/landingpage-photo.png'
+import landingPhoto from '../assets/cover.png'
+import { teamAvatars } from '../data/avatars'
 import { siteContent } from '../data/siteContent'
 
 const featureIcons = {
@@ -13,13 +14,13 @@ const featureIcons = {
   'Teacher Monitoring': TeacherIcon,
 }
 
-const creatorAvatarIds = [
-  'forest_archer',
-  'wise_wizard',
-  'silver_knight',
-  'nature_healer',
-  'desert_nomad',
-]
+const teamAvatarByMemberName = {
+  'Bagaoisan, Mark Alvin': 'mark',
+  'Caronan, Emmanuel': 'emman',
+  'Danganon, Adrian Lone': 'adrian',
+  'Quiseo, Ronica': 'nature_healer',
+  'Soriano, Jack Angelo': 'jack',
+}
 
 function LandingPage() {
   const { landing } = siteContent
@@ -27,13 +28,17 @@ function LandingPage() {
   return (
     <div className="overflow-hidden">
       <section
-        className="relative min-h-[78vh] bg-cover bg-center px-4 py-14 text-white"
-        style={{ backgroundImage: `url(${landingPhoto})` }}
+        className="relative min-h-[78vh] overflow-hidden bg-[#2b1a10] px-4 py-14 text-white"
       >
-        <div className="absolute inset-0 bg-[rgba(43,26,16,0.38)]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(43,26,16,0.46)] via-[rgba(43,26,16,0.2)] to-transparent" />
+        <img
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-95"
+          src={heroPhoto}
+          alt="Numberland Quest cover art"
+        />
+        <div className="absolute inset-0 bg-[rgba(43,26,16,0.42)]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[rgba(43,26,16,0.8)] via-[rgba(43,26,16,0.45)] to-[rgba(43,26,16,0.18)] md:to-transparent" />
         <div className="relative mx-auto flex min-h-[68vh] max-w-6xl items-center justify-center text-center sm:justify-start sm:text-left">
-          <div className="animate-hero-rise max-w-2xl">
+          <div className="animate-hero-rise max-w-2xl rounded-2xl bg-[rgba(43,26,16,0.18)] p-2 backdrop-blur-[1px] sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
             <h1 className="max-w-xl text-4xl font-black leading-tight text-white drop-shadow-[0_3px_12px_rgba(43,26,16,0.45)] sm:text-6xl">
               {landing.heroTitle}
             </h1>
@@ -69,7 +74,7 @@ function LandingPage() {
           </div>
           <div className="parchment-surface interactive-card rounded-xl p-3">
             <img
-              className="aspect-square w-full rounded-lg object-cover"
+              className="max-h-[28rem] w-full rounded-lg object-contain"
               src={landingPhoto}
               alt="A magical math storybook adventure with Alvin and glowing numbers"
             />
@@ -134,7 +139,10 @@ function LandingPage() {
         <div className="mx-auto mt-8 grid max-w-sm gap-4 sm:max-w-none sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {landing.team.map((member, index) => (
             <div className="parchment-surface interactive-card flex min-h-[260px] flex-col items-center rounded-xl p-4 text-center" key={member.name}>
-              <AvatarBadge avatarId={creatorAvatarIds[index] ?? avatars[index % avatars.length].id} size="lg" />
+              <AvatarBadge
+                avatarId={teamAvatarByMemberName[member.name] ?? teamAvatars[index % teamAvatars.length].id}
+                size="lg"
+              />
               <h3 className="mt-4 text-base font-black leading-7 text-[color:var(--brown)]">{member.name}</h3>
               <p className="mt-3 text-sm leading-6 text-[color:var(--muted)]">{member.description}</p>
             </div>

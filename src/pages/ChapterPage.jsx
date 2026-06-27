@@ -1,74 +1,199 @@
-import { useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
-import TypewriterText from '../components/TypewriterText'
+import { useEffect, useMemo, useState } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import StoryScene from '../components/chapter/StoryScene'
 import { chapters } from '../data/chapters'
 import { getCurrentUser } from '../utils/auth'
 import { getOrSetActiveClass } from '../utils/classUtils'
-import { isChapterUnlocked } from '../utils/progress'
+import { getChapterProgress, isChapterUnlocked, startChapterAttempt } from '../utils/progress'
+import { buildDialoguePages, getCurrentPageIndex } from '../utils/storyPages'
 
 function ChapterPage() {
   const { chapterId } = useParams()
+  const navigate = useNavigate()
   const [dialogueIndex, setDialogueIndex] = useState(0)
+  const [hasStarted, setHasStarted] = useState(false)
+  const [typingComplete, setTypingComplete] = useState(false)
+  const [audioComplete, setAudioComplete] = useState(false)
+  const [skipSignal, setSkipSignal] = useState(0)
+  const [repeatSignal, setRepeatSignal] = useState(0)
+  const [mode, setMode] = useState('dialogue')
+  const [revealedPageIndex, setRevealedPageIndex] = useState(0)
+  const [awaitingPageScroll, setAwaitingPageScroll] = useState(false)
+  const [completedPageIndexes, setCompletedPageIndexes] = useState([])
   const user = getCurrentUser()
-  const activeClass = getOrSetActiveClass(user.id)
+  const activeClass = user ? getOrSetActiveClass(user.id) : null
   const chapter = chapters.find((item) => item.id === chapterId)
 
-  if (!chapter || !activeClass) return <Navigate to="/student/chapters" replace />
+  useEffect(() => {
+    setDialogueIndex(0)
+    setHasStarted(false)
+    setTypingComplete(false)
+    setAudioComplete(false)
+    setSkipSignal(0)
+    setRepeatSignal(0)
+    setMode('dialogue')
+    setRevealedPageIndex(0)
+    setAwaitingPageScroll(false)
+    setCompletedPageIndexes([])
+  }, [chapterId])
+
+  useEffect(() => {
+    if (mode !== 'dialogue') return undefined
+    const timer = window.setTimeout(() => {
+      setHasStarted(true)
+    }, 3000)
+
+    return () => window.clearTimeout(timer)
+  }, [chapterId, mode, repeatSignal])
+
+  const dialogue = useMemo(
+    () => chapter?.dialogues?.[dialogueIndex] ?? null,
+    [chapter, dialogueIndex]
+  )
+  const pages = useMemo(() => buildDialoguePages(chapter), [chapter])
+  const currentPageIndex = getCurrentPageIndex(pages, dialogueIndex)
+  const currentPage = pages[currentPageIndex] ?? null
+  const chapterProgress =
+    user && activeClass && chapter
+      ? getChapterProgress(user.id, activeClass.classCode, chapter.id)
+      : null
+
+  useEffect(() => {
+    if (!user || !activeClass || !chapter || chapterProgress?.passed) return
+    startChapterAttempt({
+      studentId: user.id,
+      classCode: activeClass.classCode,
+      chapterId: chapter.id,
+    })
+  }, [activeClass, chapter, chapterProgress?.passed, user])
+
+  if (!user || !chapter || !activeClass) return <Navigate to="/student/chapters" replace />
   if (!isChapterUnlocked(user.id, activeClass.classCode, chapter.id)) {
     return <Navigate to="/student/chapters" replace />
   }
 
-  const dialogue = chapter.dialogues[dialogueIndex]
-  const finishedDialogue = dialogueIndex >= chapter.dialogues.length - 1
+  const narrationComplete = dialogueIndex >= chapter.dialogues.length - 1 && typingComplete
+
+  function handleReplay() {
+    setDialogueIndex(0)
+    setTypingComplete(false)
+    setAudioComplete(false)
+    setHasStarted(false)
+    setSkipSignal((value) => value + 1)
+    setRepeatSignal((value) => value + 1)
+    setMode('dialogue')
+    setRevealedPageIndex(0)
+    setAwaitingPageScroll(false)
+    setCompletedPageIndexes([])
+  }
+
+  useEffect(() => {
+    if (!hasStarted || !typingComplete || !audioComplete || mode !== 'dialogue' || awaitingPageScroll) return undefined
+
+    const timer = window.setTimeout(() => {
+      if (currentPage && dialogueIndex < currentPage.endIndex) {
+        setDialogueIndex((value) => value + 1)
+        setTypingComplete(false)
+        return
+      }
+
+      setCompletedPageIndexes((current) =>
+        current.includes(currentPageIndex) ? current : [...current, currentPageIndex]
+      )
+
+      if (currentPageIndex < pages.length - 1) {
+        setRevealedPageIndex(currentPageIndex + 1)
+        setAwaitingPageScroll(true)
+        return
+      }
+
+      setMode('summary')
+    }, 1000)
+
+    return () => window.clearTimeout(timer)
+  }, [audioComplete, awaitingPageScroll, currentPage, currentPageIndex, dialogueIndex, hasStarted, mode, pages.length, typingComplete])
 
   return (
-    <section>
-      <Link className="font-bold text-sky-700" to="/student/chapters">Back to story timeline</Link>
-      <div className="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="min-h-[420px] p-6 text-white" style={{ background: chapter.scene.gradient }}>
-          <div className="flex min-h-[340px] flex-col justify-between">
-            <div>
-              <p className="font-bold uppercase tracking-widest text-white/80">{chapter.scene.location}</p>
-              <h1 className="mt-2 text-4xl font-black">{chapter.title}</h1>
-              <p className="mt-3 max-w-2xl text-white/90">{chapter.story.narration}</p>
-              {chapter.audioSrc ? <audio className="mt-4" controls src={chapter.audioSrc} /> : null}
-            </div>
-            <div className="grid gap-4 md:grid-cols-[180px_1fr] md:items-end">
-              <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-4 border-white/70 bg-white/25 text-center text-lg font-black shadow-xl">
-                {chapter.scene.mascotName}
-              </div>
-              <div className="rounded-2xl border border-white/40 bg-slate-950/80 p-5 shadow-2xl">
-                <p className="mb-2 font-black text-sky-200">{dialogue.speaker}</p>
-                <p className="min-h-16 text-lg leading-8">
-                  <TypewriterText key={dialogue.text} text={dialogue.text} />
-                </p>
-                <button
-                  className="mt-4 rounded-lg bg-white px-4 py-2 font-bold text-slate-950"
-                  onClick={() => finishedDialogue ? setDialogueIndex(0) : setDialogueIndex(dialogueIndex + 1)}
-                >
-                  {finishedDialogue ? 'Replay dialogue' : 'Next dialogue'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="p-6">
-          <div className="mb-6 rounded-xl bg-slate-50 p-5">
-            <h2 className="text-xl font-black text-slate-950">Story Background</h2>
-            <p className="mt-3 leading-7 text-slate-600">{chapter.story.background}</p>
-          </div>
-          <h2 className="text-2xl font-black text-slate-950">{chapter.tutorial.title}</h2>
-          <p className="mt-3 text-slate-600">{chapter.tutorial.summary}</p>
-          <ul className="mt-4 grid gap-3 md:grid-cols-3">
-            {chapter.tutorial.points.map((point) => (
-              <li className="rounded-xl bg-slate-50 p-4 font-semibold text-slate-700" key={point}>{point}</li>
-            ))}
-          </ul>
-          <Link className="mt-6 inline-block rounded-lg bg-slate-950 px-5 py-3 font-bold text-white" to={`/student/chapter/${chapter.id}/activity`}>
-            Continue to Activity
-          </Link>
-        </div>
-      </div>
+    <section className="chapter-player-shell">
+      <StoryScene
+        chapter={chapter}
+        dialogue={dialogue}
+        dialogueIndex={dialogueIndex}
+        totalDialogues={chapter.dialogues.length}
+        hasStarted={hasStarted}
+        narrationComplete={narrationComplete}
+        typingComplete={typingComplete}
+        typewriterStart={hasStarted}
+        skipSignal={skipSignal}
+        repeatSignal={repeatSignal}
+        revealedPageIndex={revealedPageIndex}
+        awaitingPageScroll={awaitingPageScroll}
+        mode={mode}
+        onTypingComplete={() => setTypingComplete(true)}
+        onNarrationStart={() => setAudioComplete(false)}
+        onNarrationComplete={() => setAudioComplete(true)}
+        onNext={() => {}}
+        onSkipTyping={() => {
+          setSkipSignal((value) => value + 1)
+          setTypingComplete(true)
+        }}
+        onRepeatDialogue={() => {
+          const pageStart = currentPage?.startIndex ?? dialogueIndex
+          setDialogueIndex(pageStart)
+          setTypingComplete(false)
+          setAudioComplete(false)
+          setHasStarted(true)
+          setSkipSignal((value) => value + 1)
+          setRepeatSignal((value) => value + 1)
+          setAwaitingPageScroll(false)
+        }}
+        onReplayPage={(pageStart) => {
+          setDialogueIndex(pageStart)
+          setTypingComplete(false)
+          setAudioComplete(false)
+          setHasStarted(true)
+          setSkipSignal((value) => value + 1)
+          setRepeatSignal((value) => value + 1)
+          setMode('dialogue')
+          setAwaitingPageScroll(false)
+        }}
+        canSkipPage={completedPageIndexes.includes(currentPageIndex)}
+        onSkipPage={() => {
+          if (!completedPageIndexes.includes(currentPageIndex)) return
+
+          setSkipSignal((value) => value + 1)
+          setTypingComplete(true)
+          setAudioComplete(true)
+          setCompletedPageIndexes((current) =>
+            current.includes(currentPageIndex) ? current : [...current, currentPageIndex]
+          )
+
+          if (currentPageIndex < pages.length - 1) {
+            setRevealedPageIndex((value) => Math.max(value, currentPageIndex + 1))
+            setAwaitingPageScroll(true)
+            return
+          }
+
+          setMode('summary')
+        }}
+        onEnterPage={(pageIndex, pageStart) => {
+          if (pageIndex <= currentPageIndex) return
+          setDialogueIndex(pageStart)
+          setTypingComplete(false)
+          setAudioComplete(false)
+          setHasStarted(true)
+          setRepeatSignal((value) => value + 1)
+          setAwaitingPageScroll(false)
+        }}
+        onReplay={handleReplay}
+        onContinue={() =>
+          navigate(
+            chapterProgress?.passed
+              ? `/student/result/${chapter.id}`
+              : `/student/chapter/${chapter.id}/activity`
+          )
+        }
+      />
     </section>
   )
 }
