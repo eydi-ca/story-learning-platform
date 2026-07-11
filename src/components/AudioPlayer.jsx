@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { playPreparedAudio, preloadAudio, preloadAudioSources } from '../utils/audioPreload'
 
 function AudioPlayer({
-  text,
   src = '',
+  srcs = [],
   title = 'Narration',
   className = '',
   autoPlay = false,
@@ -13,9 +14,9 @@ function AudioPlayer({
 }) {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const audioRef = useRef(null)
-  const supported = useMemo(
-    () => typeof window !== 'undefined' && 'speechSynthesis' in window,
-    []
+  const audioSources = useMemo(
+    () => (srcs.length ? srcs : [src]).filter(Boolean),
+    [src, srcs]
   )
 
   function stopAllPlayback() {
@@ -23,10 +24,6 @@ function AudioPlayer({
       audioRef.current.pause()
       audioRef.current.currentTime = 0
       audioRef.current = null
-    }
-
-    if (supported) {
-      window.speechSynthesis.cancel()
     }
 
     setIsSpeaking(false)
@@ -41,48 +38,49 @@ function AudioPlayer({
     return () => {
       stopAllPlayback()
     }
-  }, [supported])
+  }, [])
 
   useEffect(() => {
-    if (!autoPlay || (!src && (!supported || !text))) {
-      if (!src && (!supported || !text)) {
-        onPlaybackComplete?.()
-      }
+    if (!autoPlay || !audioSources.length) {
+      if (!audioSources.length) onPlaybackComplete?.()
       return
     }
+
+    let cancelled = false
+    let index = 0
 
     stopAllPlayback()
     onPlaybackStart?.()
 
-    if (src) {
-      const audio = new Audio(src)
-      audioRef.current = audio
-      audio.onended = handlePlaybackComplete
-      audio.onerror = handlePlaybackComplete
-      audio.play().then(() => setIsSpeaking(true)).catch(() => setIsSpeaking(false))
-      return () => {
-        if (audioRef.current === audio) {
-          audio.pause()
-          audio.currentTime = 0
-          audioRef.current = null
-        }
-        setIsSpeaking(false)
+    async function playNext() {
+      if (cancelled) return
+
+      if (index >= audioSources.length) {
+        handlePlaybackComplete()
+        return
       }
+
+      const currentSource = audioSources[index]
+      preloadAudioSources(audioSources.slice(index + 1))
+      await preloadAudio(currentSource)
+      if (cancelled) return
+
+      const audio = new Audio(currentSource)
+      audio.preload = 'auto'
+      index += 1
+      audioRef.current = audio
+      audio.onended = playNext
+      audio.onerror = playNext
+      playPreparedAudio(audio).then(() => setIsSpeaking(true)).catch(playNext)
     }
 
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = 0.95
-    utterance.pitch = 1
-    utterance.onend = handlePlaybackComplete
-    utterance.onerror = handlePlaybackComplete
-
-    window.speechSynthesis.speak(utterance)
-    setIsSpeaking(true)
+    playNext()
 
     return () => {
+      cancelled = true
       stopAllPlayback()
     }
-  }, [autoPlay, replayKey, src, supported, text])
+  }, [audioSources, autoPlay, replayKey])
 
   function handleToggle() {
     if (isSpeaking) {
@@ -90,29 +88,32 @@ function AudioPlayer({
       return
     }
 
-    if (src) {
-      stopAllPlayback()
-      onPlaybackStart?.()
-      const audio = new Audio(src)
+    if (!audioSources.length) return
+
+    let index = 0
+
+    async function playNext() {
+      if (index >= audioSources.length) {
+        handlePlaybackComplete()
+        return
+      }
+
+      const currentSource = audioSources[index]
+      preloadAudioSources(audioSources.slice(index + 1))
+      await preloadAudio(currentSource)
+
+      const audio = new Audio(currentSource)
+      audio.preload = 'auto'
+      index += 1
       audioRef.current = audio
-      audio.onended = handlePlaybackComplete
-      audio.onerror = handlePlaybackComplete
-      audio.play().then(() => setIsSpeaking(true)).catch(() => setIsSpeaking(false))
-      return
+      audio.onended = playNext
+      audio.onerror = playNext
+      playPreparedAudio(audio).then(() => setIsSpeaking(true)).catch(playNext)
     }
-
-    if (!supported || !text) return
-
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = 0.95
-    utterance.pitch = 1
-    utterance.onend = handlePlaybackComplete
-    utterance.onerror = handlePlaybackComplete
 
     stopAllPlayback()
     onPlaybackStart?.()
-    window.speechSynthesis.speak(utterance)
-    setIsSpeaking(true)
+    playNext()
   }
 
   if (!showControls) {
@@ -132,10 +133,10 @@ function AudioPlayer({
         <button
           type="button"
           onClick={handleToggle}
-          disabled={!src && !supported}
+          disabled={!audioSources.length}
           className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-white/40 disabled:text-slate-500"
         >
-          {src || supported ? (isSpeaking ? 'Stop narration' : 'Play narration') : 'Speech not supported'}
+          {audioSources.length ? (isSpeaking ? 'Stop narration' : 'Play narration') : 'No audio available'}
         </button>
       </div>
     </div>

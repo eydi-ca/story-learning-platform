@@ -50,23 +50,7 @@ function ProloguePage() {
   const pages = useMemo(() => buildDialoguePages(prologue), [])
   const currentPageIndex = getCurrentPageIndex(pages, dialogueIndex)
   const currentPage = pages[currentPageIndex] ?? null
-
-  if (!user || !activeClass) return <Navigate to="/student/chapters" replace />
-
   const narrationComplete = dialogueIndex >= prologue.dialogues.length - 1 && typingComplete
-
-  function handleReplay() {
-    setDialogueIndex(0)
-    setTypingComplete(false)
-    setAudioComplete(false)
-    setHasStarted(false)
-    setSkipSignal((value) => value + 1)
-    setRepeatSignal((value) => value + 1)
-    setMode('dialogue')
-    setRevealedPageIndex(0)
-    setAwaitingPageScroll(false)
-    setCompletedPageIndexes([])
-  }
 
   useEffect(() => {
     if (!hasStarted || !typingComplete || !audioComplete || mode !== 'dialogue' || awaitingPageScroll) return undefined
@@ -75,6 +59,7 @@ function ProloguePage() {
       if (currentPage && dialogueIndex < currentPage.endIndex) {
         setDialogueIndex((value) => value + 1)
         setTypingComplete(false)
+        setAudioComplete(false)
         return
       }
 
@@ -93,6 +78,21 @@ function ProloguePage() {
 
     return () => window.clearTimeout(timer)
   }, [audioComplete, awaitingPageScroll, currentPage, currentPageIndex, dialogueIndex, hasStarted, mode, pages.length, typingComplete])
+
+  if (!user || !activeClass) return <Navigate to="/student/chapters" replace />
+
+  function handleReplay() {
+    setDialogueIndex(0)
+    setTypingComplete(false)
+    setAudioComplete(false)
+    setHasStarted(false)
+    setSkipSignal((value) => value + 1)
+    setRepeatSignal((value) => value + 1)
+    setMode('dialogue')
+    setRevealedPageIndex(0)
+    setAwaitingPageScroll(false)
+    setCompletedPageIndexes([])
+  }
 
   return (
     <section className="chapter-player-shell">

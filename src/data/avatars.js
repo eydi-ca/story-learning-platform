@@ -11,6 +11,7 @@ import emman from '../assets/team_profiles/emman.png'
 import mark from '../assets/team_profiles/mark.jpg'
 import adrian from '../assets/team_profiles/adrian.jpg'
 import jack from '../assets/team_profiles/jack.jpg'
+import ronica from '../assets/team_profiles/ronica.jpg'
 
 export const fantasyAvatars = [
   { id: 'forest_archer', name: 'Forest Archer', initials: 'FA', src: archerAvatar, color: 'bg-emerald-600' },
@@ -28,6 +29,7 @@ export const teamAvatars = [
   { id: 'mark', name: 'Mark', initials: 'M', src: mark, color: 'bg-green-600' },
   { id: 'adrian', name: 'Adrian', initials: 'A', src: adrian, color: 'bg-yellow-600' },
   { id: 'jack', name: 'Jack', initials: 'J', src: jack, color: 'bg-red-600' },
+  { id: 'ronica', name: 'Ronica', initials: 'R', src: ronica, color: 'bg-pink-600' },
 ]
 
 export const avatars = [...fantasyAvatars, ...teamAvatars]

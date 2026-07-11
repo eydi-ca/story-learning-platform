@@ -1,23 +1,12 @@
-import prologuePage1Audio0 from '../assets/audio/prolouge_page1/audio_0_Hi__My_name_is_Alvin_.mp3'
-import prologuePage1Audio1 from '../assets/audio/prolouge_page1/audio_1_People_at_school_always_say_I_m_good_at_math__.mp3'
-import prologuePage1Audio2 from '../assets/audio/prolouge_page1/audio_2_not_because_I_memorize_answers__but_because_I_understand_where_numbers_belong_.mp3'
-import prologuePage1Audio3 from '../assets/audio/prolouge_page1/audio_3_To_me__numbers_feel_like_they_have_places__like_they_re_part_of_a_bigger_world_.mp3'
-import prologuePage2Audio0 from '../assets/audio/prolouge_page2/audio_0_When_I_opened_the_book__the_pages_began_to_glow__Numbers_spilled_out_like_light__.mp3'
-import prologuePage2Audio1 from '../assets/audio/prolouge_page2/audio_1_before_i_could_react_pulled_into_the_book.mp3'
-import prologuePage3Audio0 from '../assets/audio/prologue_page3/audio_0_I_stared_at_the_glowing_words_floating_in_front_of_me_.mp3'
-import prologuePage3Audio1 from '../assets/audio/prologue_page3/audio_1_A_system__A_learning_scenario__.mp3'
-import prologuePage3Audio2 from '../assets/audio/prologue_page3/audio_2_It_was_too_real_for_me_to_ignore_.mp3'
-import prologuePage3Audio3 from '../assets/audio/prologue_page3/audio_3_I_steadied_myself_and_prepared_to_move_forward.mp3'
-import prologuePage4Audio0 from '../assets/audio/prolouge_page4/audio_0_I_found_myself_standing_on_a_cliff_overlooking_a_vast_kingdom__.mp3'
-import prologuePage4Audio1 from '../assets/audio/prolouge_page4/audio_1_Stretching_endlessly_to_the_left_and_right_was_a_glowing_rainbow_path_the_Number_Line__.mp3'
-import prologuePage4Audio2 from '../assets/audio/prolouge_page4/audio_2_It_shimmered_like_a_bridge_of_light__dividing_the_land_perfectly_.mp3'
-import prologuePage5Audio0 from '../assets/audio/prolouge_page5/audio_0_A_glowing_portal_suddenly_appeared_in_front_of_me__.mp3'
-import prologuePage5Audio1 from '../assets/audio/prolouge_page5/audio_1_Without_thinking_twice__I_stepped_forward_.mp3'
+import { getVoiceoverSrc } from '../utils/voiceoverAssets'
 import prologuePage1Background from '../assets/chapters/prologue/page 1.png'
 import prologuePage2Background from '../assets/chapters/prologue/page 2.png'
 import prologuePage3Background from '../assets/chapters/prologue/page 3.png'
 import prologuePage4Background from '../assets/chapters/prologue/page 4.png'
 import prologuePage5Background from '../assets/chapters/prologue/page 5.png'
+import prologueCover from '../assets/chapters/prologue/a_journey_begins_cover.png'
+
+const voiceover = getVoiceoverSrc
 
 export const prologue = {
   id: 'prologue',
@@ -25,12 +14,13 @@ export const prologue = {
   shortDescription: 'Meet Alvin and follow the full opening sequence before Chapter 1 begins.',
   description:
     "A replayable story introduction that now includes Alvin's full transition into Numberland before Chapter 1 starts.",
-  duration: '7 minutes',
+  duration: '5 minutes',
   scene: {
     location: 'Before Chapter 1',
     mood: 'Reflective, magical, and cinematic',
     mascotName: 'Alvin',
     mascotRole: 'Student Explorer',
+    coverImage: prologueCover,
   },
   story: {
     title: 'The beginning of the journey',
@@ -41,91 +31,139 @@ export const prologue = {
     {
       speaker: 'Alvin',
       text: 'Hi, my name is Alvin.',
-      audioSrc: prologuePage1Audio0,
+      audioSrc: voiceover(1, 'P1S1'),
       backgroundSrc: prologuePage1Background,
     },
     {
       speaker: 'Alvin',
       text: "People at school always say I'm good at math.",
-      audioSrc: prologuePage1Audio1,
+      audioSrc: voiceover(1, 'P1S2'),
       backgroundSrc: prologuePage1Background,
     },
     {
       speaker: 'Alvin',
       text: 'Not because I memorize answers, but because I understand where numbers belong.',
-      audioSrc: prologuePage1Audio2,
+      audioSrc: voiceover(1, 'P1S3'),
       backgroundSrc: prologuePage1Background,
     },
     {
       speaker: 'Alvin',
       text: "To me, numbers feel like they have places, like they're part of a bigger world.",
-      audioSrc: prologuePage1Audio3,
+      audioSrc: voiceover(1, 'P1S4'),
       backgroundSrc: prologuePage1Background,
     },
     {
       speaker: 'Alvin',
-      text: 'When I opened the book, the pages began to glow. Numbers spilled out like light.',
-      audioSrc: prologuePage2Audio0,
+      text: "One afternoon, while I was cleaning the classroom shelves, I found an old, dusty book hidden behind some papers.",
+      audioSrc: voiceover(1, 'P1S5'),
+      backgroundSrc: prologuePage1Background,
+    },
+    {
+      speaker: 'Alvin',
+      text: "Nearby were photos of my math awards taped to the wall.",
+      audioSrc: voiceover(1, 'P1S6'),
+      backgroundSrc: prologuePage1Background,
+    },
+    {
+      speaker: 'Alvin',
+      text: "I picked the book up, curious.",
+      audioSrc: voiceover(1, 'P1S7'),
+      backgroundSrc: prologuePage1Background,
+    },
+    {
+      speaker: 'Alvin',
+      text: 'When I opened the book, the pages began to glow.',
+      audioSrc: voiceover(2, 'P2S1'),
+      backgroundSrc: prologuePage2Background,
+    },
+    {
+      speaker: 'Alvin',
+      text: 'Numbers spilled out like light.',
+      audioSrc: voiceover(2, 'P2S2'),
       backgroundSrc: prologuePage2Background,
     },
     {
       speaker: 'Alvin',
       text: 'Before I could react, the world around me twisted and suddenly, I felt myself being pulled into the book.',
-      audioSrc: prologuePage2Audio1,
+      audioSrc: voiceover(2, 'P2S3'),
+      backgroundSrc: prologuePage2Background,
+    },
+    {
+      speaker: 'System',
+      text: 'Reader detected. Compatibility: 100%',
+      audioSrc: voiceover(2, 'SM1P2'),
       backgroundSrc: prologuePage2Background,
     },
     {
       speaker: 'Alvin',
       text: 'I stared at the glowing words floating in front of me.',
-      audioSrc: prologuePage3Audio0,
+      audioSrc: voiceover(3, 'P3S1'),
       backgroundSrc: prologuePage3Background,
     },
     {
       speaker: 'System',
-      text: 'A system. A learning scenario.',
-      audioSrc: prologuePage3Audio1,
+      text: 'Initializing Learning Scenario... World Loaded: Numberland. Objective: Understand the Subsets of Real Numbers. Participant: Alvin (Reader-Class).',
+      audioSrc: voiceover(3, 'SM1P3'),
+      backgroundSrc: prologuePage3Background,
+    },
+    {
+      speaker: 'Alvin',
+      text: 'A system, a learning Scenario?',
+      audioSrc: voiceover(3, 'P3S2'),
       backgroundSrc: prologuePage3Background,
     },
     {
       speaker: 'Alvin',
       text: 'It was too real for me to ignore.',
-      audioSrc: prologuePage3Audio2,
+      audioSrc: voiceover(3, 'P3S3'),
       backgroundSrc: prologuePage3Background,
     },
     {
       speaker: 'Alvin',
       text: 'I steadied myself and prepared to move forward.',
-      audioSrc: prologuePage3Audio3,
+      audioSrc: voiceover(3, 'P3S4'),
       backgroundSrc: prologuePage3Background,
     },
     {
       speaker: 'Alvin',
       text: 'I found myself standing on a cliff overlooking a vast kingdom.',
-      audioSrc: prologuePage4Audio0,
+      audioSrc: voiceover(4, 'P4S1'),
       backgroundSrc: prologuePage4Background,
     },
     {
       speaker: 'Alvin',
       text: 'Stretching endlessly to the left and right was a glowing rainbow path, the Number Line.',
-      audioSrc: prologuePage4Audio1,
+      audioSrc: voiceover(4, 'P4S2'),
       backgroundSrc: prologuePage4Background,
     },
     {
       speaker: 'Alvin',
       text: 'It shimmered like a bridge of light, dividing the land perfectly.',
-      audioSrc: prologuePage4Audio2,
+      audioSrc: voiceover(4, 'P4S3'),
+      backgroundSrc: prologuePage4Background,
+    },
+    {
+      speaker: 'System',
+      text: 'Map locked. Regions unlock through successful classification.',
+      audioSrc: voiceover(4, 'SM1P4'),
       backgroundSrc: prologuePage4Background,
     },
     {
       speaker: 'Alvin',
       text: 'A glowing portal suddenly appeared in front of me.',
-      audioSrc: prologuePage5Audio0,
+      audioSrc: voiceover(5, 'P5S1'),
       backgroundSrc: prologuePage5Background,
     },
     {
       speaker: 'Alvin',
       text: 'Without thinking twice, I stepped forward.',
-      audioSrc: prologuePage5Audio1,
+      audioSrc: voiceover(5, 'P5S2'),
+      backgroundSrc: prologuePage5Background,
+    },
+    {
+      speaker: 'System',
+      text: 'Enter the Portal',
+      audioSrc: voiceover(5, 'SM1P5'),
       backgroundSrc: prologuePage5Background,
     },
   ],

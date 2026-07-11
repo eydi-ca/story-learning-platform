@@ -2,6 +2,7 @@ import { demoClasses, demoMemberships, demoProgress, demoUsers } from '../data/d
 import { isSupabaseConfigured } from '../lib/supabase'
 
 export const STORAGE_KEYS = {
+  curriculumVersion: 'story_app_curriculum_version',
   users: 'story_app_users',
   session: 'story_app_session',
   adminSession: 'story_app_admin_session',
@@ -14,6 +15,8 @@ export const STORAGE_KEYS = {
   chapterTiming: 'story_app_chapter_timing',
   chapterAttemptSessions: 'story_app_chapter_attempt_sessions',
 }
+
+const CURRENT_CURRICULUM_VERSION = 'chapter-placeholders-v1'
 
 export const ADMIN_CREDENTIALS = {
   identifiers: ['admin', 'admin@numberlandquest.local'],
@@ -45,6 +48,15 @@ function isoNow() {
 }
 
 export function ensureSeedData() {
+  const storedCurriculumVersion = localStorage.getItem(STORAGE_KEYS.curriculumVersion)
+  if (storedCurriculumVersion !== CURRENT_CURRICULUM_VERSION) {
+    localStorage.removeItem(STORAGE_KEYS.progress)
+    localStorage.removeItem(STORAGE_KEYS.results)
+    localStorage.removeItem(STORAGE_KEYS.chapterTiming)
+    localStorage.removeItem(STORAGE_KEYS.chapterAttemptSessions)
+    localStorage.setItem(STORAGE_KEYS.curriculumVersion, CURRENT_CURRICULUM_VERSION)
+  }
+
   if (isSupabaseConfigured) return
 
   if (!localStorage.getItem(STORAGE_KEYS.users)) {

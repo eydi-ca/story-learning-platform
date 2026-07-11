@@ -110,6 +110,7 @@ function StudentChaptersPage() {
             const unlocked = isChapterUnlocked(user.id, activeClass.classCode, chapter.id)
             const status = getChapterStatus(user.id, activeClass.classCode, chapter.id)
             const passed = status === 'Passed'
+            const tileImage = chapter.scene?.coverImage || chapter.scene?.image || sampleBackground
             return (
               <div className={`relative flex ${index % 2 ? 'md:justify-end' : 'md:justify-start'}`} key={chapter.id}>
                 <div className="absolute left-2 top-7 z-10 flex h-11 w-11 items-center justify-center rounded-full border-4 border-white bg-slate-950 font-black text-white shadow md:left-1/2 md:-translate-x-1/2">
@@ -117,14 +118,22 @@ function StudentChaptersPage() {
                 </div>
                 <button
                   disabled={!unlocked}
-                  onClick={() => navigate(`/student/chapter/${chapter.id}`)}
+                  onClick={() =>
+                    navigate(
+                      passed
+                        ? `/student/result/${chapter.id}`
+                        : chapter.assessmentMode
+                          ? `/student/chapter/${chapter.id}/activity`
+                          : `/student/chapter/${chapter.id}`
+                    )
+                  }
                   className={`chapter-tile group ml-20 w-full overflow-hidden rounded-[1.6rem] border text-left shadow-sm md:ml-0 md:w-[44%] ${unlocked ? 'border-slate-200 bg-white hover:border-sky-300' : 'cursor-not-allowed border-slate-200 bg-slate-100 opacity-70'} ${passed ? 'ring-2 ring-emerald-300' : ''}`}
                 >
                   <div className="chapter-tile-media relative min-h-[220px]">
                     <div
                       className="chapter-tile-image absolute inset-0"
                       style={{
-                        backgroundImage: `linear-gradient(180deg, rgb(15 23 42 / 0.18), rgb(15 23 42 / 0.65)), url(${sampleBackground})`,
+                        backgroundImage: `linear-gradient(180deg, rgb(15 23 42 / 0.18), rgb(15 23 42 / 0.65)), url(${tileImage})`,
                       }}
                     />
                     <div className="chapter-tile-overlay absolute inset-0" />
@@ -140,7 +149,7 @@ function StudentChaptersPage() {
                             {chapter.duration}
                           </span>
                           <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                            Passing score: 75%
+                            {chapter.activities?.length ? 'Passing score: 100%' : 'Story summary'}
                           </span>
                         </div>
                       </div>

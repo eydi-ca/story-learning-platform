@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
-import StatCard from '../components/StatCard'
 import { chapters } from '../data/chapters'
 import { siteContent } from '../data/siteContent'
 import { getClassStudents } from '../utils/classUtils'
-import { getClasses, getProgressRecords, getUsers } from '../utils/storage'
+import { getAllCompatibleProgressRecords } from '../utils/progress'
+import { getClasses, getUsers } from '../utils/storage'
+
+const chartColors = ['bg-sky-500', 'bg-emerald-500', 'bg-violet-500', 'bg-amber-500', 'bg-rose-500']
 
 function getRangeDate(range) {
   if (range === 'all') return null
@@ -11,6 +13,54 @@ function getRangeDate(range) {
   const date = new Date()
   date.setDate(date.getDate() - days)
   return date
+}
+
+function MetricTile({ label, value, hint, accent = 'bg-sky-500' }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</p>
+          <p className="mt-3 text-3xl font-black tracking-tight text-slate-950">{value}</p>
+        </div>
+        <span className={`h-10 w-2 rounded-full ${accent}`} />
+      </div>
+      <p className="mt-3 text-sm leading-5 text-slate-600">{hint}</p>
+    </div>
+  )
+}
+
+function RingMetric({ label, value, caption, color = '#0284c7' }) {
+  const radius = 42
+  const circumference = 2 * Math.PI * radius
+  const normalizedValue = Math.min(Math.max(value, 0), 100)
+  const offset = circumference - (normalizedValue / 100) * circumference
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-center gap-5">
+        <svg className="h-28 w-28 shrink-0 -rotate-90" viewBox="0 0 100 100" role="img" aria-label={`${label}: ${value}%`}>
+          <circle cx="50" cy="50" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+          <circle
+            cx="50"
+            cy="50"
+            r={radius}
+            fill="none"
+            stroke={color}
+            strokeLinecap="round"
+            strokeWidth="10"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+          />
+        </svg>
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[0.22em] text-slate-500">{label}</p>
+          <p className="mt-2 text-4xl font-black tracking-tight text-slate-950">{value}%</p>
+          <p className="mt-2 text-sm leading-5 text-slate-600">{caption}</p>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function BarChart({ items, valueKey, labelKey, colorClass = 'bg-slate-900', suffix = '' }) {
@@ -21,12 +71,12 @@ function BarChart({ items, valueKey, labelKey, colorClass = 'bg-slate-900', suff
       {items.map((item) => (
         <div key={item[labelKey]}>
           <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-            <span className="font-medium text-slate-700">{item[labelKey]}</span>
-            <span className="text-slate-500">{item[valueKey]}{suffix}</span>
+            <span className="font-bold text-slate-800">{item[labelKey]}</span>
+            <span className="font-black text-slate-950">{item[valueKey]}{suffix}</span>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-sm bg-slate-100">
+          <div className="h-3 overflow-hidden rounded-full bg-slate-200">
             <div
-              className={`h-full rounded-sm ${colorClass} transition-all duration-500`}
+              className={`h-full rounded-full ${colorClass} transition-all duration-500`}
               style={{ width: `${Math.max((item[valueKey] / max) * 100, item[valueKey] ? 10 : 0)}%` }}
             />
           </div>
@@ -36,11 +86,43 @@ function BarChart({ items, valueKey, labelKey, colorClass = 'bg-slate-900', suff
   )
 }
 
+function AttemptDistribution({ passed, failed }) {
+  const total = Math.max(passed + failed, 1)
+  const segments = [
+    { label: 'Passed', value: passed, className: 'bg-emerald-500' },
+    { label: 'Needs retry', value: failed, className: 'bg-rose-500' },
+  ]
+
+  return (
+    <div>
+      <div className="flex h-5 overflow-hidden rounded-full bg-slate-200">
+        {segments.map((segment) => (
+          <div
+            key={segment.label}
+            className={segment.className}
+            style={{ width: `${(segment.value / total) * 100}%` }}
+            title={`${segment.label}: ${segment.value}`}
+          />
+        ))}
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        {segments.map((segment) => (
+          <div key={segment.label} className="flex items-center gap-2 text-sm">
+            <span className={`h-3 w-3 rounded-full ${segment.className}`} />
+            <span className="font-semibold text-slate-700">{segment.label}</span>
+            <span className="ml-auto font-black text-slate-950">{segment.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function AdminDashboard() {
   const [range, setRange] = useState('30')
   const users = getUsers()
   const classes = getClasses()
-  const allProgress = getProgressRecords()
+  const allProgress = getAllCompatibleProgressRecords()
 
   const {
     filteredProgress,
@@ -53,6 +135,9 @@ function AdminDashboard() {
     chaptersData,
     teacherPerformance,
     attentionItems,
+    passedAttempts,
+    failedAttempts,
+    archivedClasses,
   } = useMemo(() => {
     const rangeDate = getRangeDate(range)
     const filteredProgress = rangeDate
@@ -62,6 +147,7 @@ function AdminDashboard() {
     const teachers = users.filter((user) => user.role === 'teacher').length
     const students = users.filter((user) => user.role === 'student').length
     const activeClasses = classes.filter((classroom) => classroom.status !== 'archived').length
+    const archivedClasses = classes.length - activeClasses
     const averageScore = filteredProgress.length
       ? Math.round(filteredProgress.reduce((sum, item) => sum + item.percentage, 0) / filteredProgress.length)
       : 0
@@ -71,6 +157,8 @@ function AdminDashboard() {
     const completionRate = students && chapters.length
       ? Math.round((filteredProgress.length / (students * chapters.length)) * 100)
       : 0
+    const passedAttempts = filteredProgress.filter((item) => item.passed).length
+    const failedAttempts = filteredProgress.length - passedAttempts
 
     const chaptersData = chapters.map((chapter) => {
       const records = filteredProgress.filter((item) => item.chapterId === chapter.id)
@@ -130,6 +218,9 @@ function AdminDashboard() {
       chaptersData,
       teacherPerformance,
       attentionItems,
+      passedAttempts,
+      failedAttempts,
+      archivedClasses,
     }
   }, [allProgress, classes, range, users])
 
@@ -157,44 +248,53 @@ function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <StatCard label="Teachers" value={teachers} hint="Active teaching accounts" />
-        <StatCard label="Students" value={students} hint="Learners on the platform" />
-        <StatCard label="Classes" value={activeClasses} hint="Active class sections" />
-        <StatCard label="Average Score" value={`${averageScore}%`} hint={`${filteredProgress.length} recorded attempts`} />
-        <StatCard label="Passing Rate" value={`${passingRate}%`} hint={`Completion coverage ${completionRate}%`} />
+        <MetricTile label="Teachers" value={teachers} hint="Active teaching accounts" accent="bg-violet-500" />
+        <MetricTile label="Students" value={students} hint="Learners on the platform" accent="bg-sky-500" />
+        <MetricTile label="Classes" value={activeClasses} hint={`${archivedClasses} archived sections`} accent="bg-emerald-500" />
+        <MetricTile label="Attempts" value={filteredProgress.length} hint="Recorded submissions" accent="bg-amber-500" />
+        <MetricTile label="Flags" value={attentionItems.length} hint="Classes needing follow-up" accent="bg-rose-500" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <RingMetric label="Average Score" value={averageScore} caption={`${filteredProgress.length} recorded attempts`} color="#8b5cf6" />
+        <RingMetric label="Passing Rate" value={passingRate} caption="Passed attempts in selected window" color="#10b981" />
+        <RingMetric label="Coverage" value={completionRate} caption="Recorded attempts against chapter capacity" color="#0ea5e9" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.45fr_0.95fr]">
-        <div className="admin-panel p-6">
-          <div className="flex items-start justify-between gap-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900">Chapter performance overview</h2>
+              <h2 className="text-xl font-black tracking-tight text-slate-950">Chapter performance overview</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">Average chapter scores help identify topics that may need intervention.</p>
             </div>
+            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-sky-700">
+              Chapter Scores
+            </span>
           </div>
           <div className="mt-6">
-            <BarChart items={chaptersData} labelKey="label" valueKey="score" suffix="%" />
+            <BarChart items={chaptersData} labelKey="label" valueKey="score" suffix="%" colorClass="bg-sky-500" />
           </div>
         </div>
 
-        <div className="admin-panel p-6">
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">Feedback queue</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-black tracking-tight text-slate-950">Feedback queue</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">Classes that may need admin or teacher follow-up.</p>
           <div className="mt-5 space-y-3">
             {attentionItems.length ? attentionItems.map((item) => (
-              <div key={item.id} className="admin-card p-4">
+              <div key={item.id} className="rounded-xl border border-amber-100 bg-amber-50 p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-slate-900">{item.name}</p>
-                    <p className="mt-1 text-sm text-slate-500">{item.teacherName}</p>
+                    <p className="text-sm font-black text-slate-950">{item.name}</p>
+                    <p className="mt-1 text-sm text-slate-600">{item.teacherName}</p>
                   </div>
-                  <span className="rounded-sm bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{item.passRate}% pass</span>
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-amber-700">{item.passRate}% pass</span>
                 </div>
-                <p className="mt-3 text-sm text-amber-700">{item.flag}</p>
+                <p className="mt-3 text-sm font-semibold text-amber-800">{item.flag}</p>
               </div>
             )) : (
-              <div className="admin-card p-4">
-                <p className="text-sm text-slate-600">No urgent follow-up items in the selected filter window.</p>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+                <p className="text-sm font-semibold text-emerald-800">No urgent follow-up items in the selected filter window.</p>
               </div>
             )}
           </div>
@@ -202,29 +302,37 @@ function AdminDashboard() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="admin-panel p-6">
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">Top teacher performance</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-black tracking-tight text-slate-950">Top teacher performance</h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">Average student scores grouped by teacher-owned classes.</p>
-          <div className="mt-6">
-            <BarChart items={teacherPerformance.map((item) => ({ ...item, label: `${item.label} (${item.students})` }))} labelKey="label" valueKey="score" suffix="%" colorClass="bg-slate-700" />
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            {teacherPerformance.map((item, index) => (
+              <div key={item.label} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black text-slate-950">{item.label}</p>
+                    <p className="mt-1 text-sm text-slate-600">{item.students} students</p>
+                  </div>
+                  <span className="text-2xl font-black text-slate-950">{item.score}%</span>
+                </div>
+                <div className="mt-4 h-3 overflow-hidden rounded-full bg-slate-200">
+                  <div className={`h-full rounded-full ${chartColors[index % chartColors.length]}`} style={{ width: `${item.score}%` }} />
+                </div>
+              </div>
+            ))}
+            {!teacherPerformance.length ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm font-semibold text-slate-600">No teacher performance records yet.</p>
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <div className="admin-panel p-6">
-          <h2 className="text-xl font-semibold tracking-tight text-slate-900">Dashboard notes</h2>
-          <div className="mt-4 space-y-4">
-            <div className="admin-card p-4">
-              <p className="text-sm font-medium text-slate-900">What we measure</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Teacher count, student coverage, class participation, score trends, and pass rates.</p>
-            </div>
-            <div className="admin-card p-4">
-              <p className="text-sm font-medium text-slate-900">What needs attention</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Classes with no students or low pass rates appear in the feedback queue for quick review.</p>
-            </div>
-            <div className="admin-card p-4">
-              <p className="text-sm font-medium text-slate-900">Data source</p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">This dashboard reads current synced class, user, and progress records from the active workspace state.</p>
-            </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-black tracking-tight text-slate-950">Attempt outcomes</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600">A quick pass and retry distribution for the selected window.</p>
+          <div className="mt-6">
+            <AttemptDistribution passed={passedAttempts} failed={failedAttempts} />
           </div>
         </div>
       </div>

@@ -65,6 +65,7 @@ function TypewriterText({
 
       if (progress >= 1 || nextLength >= text.length) {
         clearTypingTimer()
+        setVisibleText(text)
         if (!completedRef.current) {
           completedRef.current = true
           onCompleteRef.current?.()

@@ -40,6 +40,48 @@ function writeAttemptSessions(value) {
   writeJson(STORAGE_KEYS.chapterAttemptSessions, value)
 }
 
+function getChapterDefinition(chapterId) {
+  return chapters.find((chapter) => chapter.id === chapterId) ?? null
+}
+
+function getExpectedActivityIds(chapterId) {
+  return (getChapterDefinition(chapterId)?.activities ?? []).map((activity) => activity.id).sort()
+}
+
+function normalizeAnswerQuestionIds(record) {
+  return Array.isArray(record?.answers)
+    ? record.answers
+        .map((answer) => answer?.questionId)
+        .filter(Boolean)
+        .sort()
+    : []
+}
+
+function isRecordCompatible(record) {
+  if (!record?.chapterId) return false
+
+  const expectedActivityIds = getExpectedActivityIds(record.chapterId)
+  if (!expectedActivityIds.length) return true
+
+  const answerQuestionIds = normalizeAnswerQuestionIds(record)
+  if (record.total !== expectedActivityIds.length) return false
+  if (answerQuestionIds.length !== expectedActivityIds.length) return false
+
+  return expectedActivityIds.every((id, index) => answerQuestionIds[index] === id)
+}
+
+function getCompatibleProgressRecords() {
+  return getProgressRecords().filter(isRecordCompatible)
+}
+
+function getCompatibleResults() {
+  return getResults().filter(isRecordCompatible)
+}
+
+export function getAllCompatibleProgressRecords() {
+  return getCompatibleProgressRecords()
+}
+
 function withTimingMetadata(record) {
   if (!record) return null
   const timing = readTimingMap()[record.key] ?? {}
@@ -122,14 +164,14 @@ function finalizeChapterAttempt({ studentId, classCode, chapterId, completedAt, 
 }
 
 export function getProgressForClass(studentId, classId) {
-  return getProgressRecords()
+  return getCompatibleProgressRecords()
     .filter((item) => item.studentId === studentId && item.classId === classId)
     .map(withTimingMetadata)
 }
 
 export function getChapterProgress(studentId, classCode, chapterId) {
   return withTimingMetadata(
-    getProgressRecords().find(
+    getCompatibleProgressRecords().find(
       (item) =>
         item.studentId === studentId &&
         item.classCode === classCode &&
@@ -164,10 +206,11 @@ export async function saveActivityResult({
   score,
   total,
   answers,
+  passedOverride,
 }) {
-  const percentage = total > 0 ? Math.round((score / total) * 100) : 0
-  const passed = percentage >= 75
-  const existing = getProgressRecords()
+  const percentage = total > 0 ? Math.round((score / total) * 100) : 100
+  const passed = typeof passedOverride === 'boolean' ? passedOverride : percentage >= 100
+  const existing = getCompatibleProgressRecords()
   const previous = getChapterProgress(studentId, classCode, chapterId)
 
   if (previous?.passed) {
@@ -269,14 +312,124 @@ export async function saveActivityResult({
     ...timing,
     id: createId('result'),
   }
-  saveResults([result, ...getResults()])
+  saveResults([result, ...getCompatibleResults()])
+
+  return { progress: { ...progressItem, ...timing }, result }
+}
+
+export async function saveChapterCompletion({
+  studentId,
+  classId,
+  classCode,
+  chapterId,
+}) {
+  const existing = getCompatibleProgressRecords()
+  const previous = getChapterProgress(studentId, classCode, chapterId)
+
+  if (previous?.passed) {
+    return { progress: previous }
+  }
+
+  const completedAt = stamp()
+  const progressItem = {
+    id: previous?.id ?? createId('progress'),
+    key: getProgressKey({ studentId, classCode, chapterId }),
+    studentId,
+    classId,
+    classCode,
+    chapterId,
+    score: 0,
+    total: 0,
+    percentage: 100,
+    passed: true,
+    answers: [],
+    completedAt,
+    attempts: (previous?.attempts ?? 0) + 1,
+  }
+
+  const timing = finalizeChapterAttempt({
+    studentId,
+    classCode,
+    chapterId,
+    completedAt,
+    passed: true,
+  })
+
+  if (isSupabaseConfigured) {
+    const { data: progressRow, error: progressError } = await supabase
+      .from('chapter_progress')
+      .upsert(
+        {
+          id: previous?.id,
+          student_id: studentId,
+          class_id: classId,
+          class_code: classCode,
+          chapter_id: chapterId,
+          score: progressItem.score,
+          total: progressItem.total,
+          percentage: progressItem.percentage,
+          passed: progressItem.passed,
+          answers: progressItem.answers,
+          completed_at: progressItem.completedAt,
+          attempts: progressItem.attempts,
+        },
+        { onConflict: 'student_id,class_id,chapter_id' }
+      )
+      .select()
+      .single()
+
+    if (progressError) throw progressError
+
+    const { error: resultError } = await supabase.from('activity_results').insert({
+      progress_id: progressRow.id,
+      student_id: studentId,
+      class_id: classId,
+      class_code: classCode,
+      chapter_id: chapterId,
+      score: progressItem.score,
+      total: progressItem.total,
+      percentage: progressItem.percentage,
+      passed: progressItem.passed,
+      answers: progressItem.answers,
+      completed_at: progressItem.completedAt,
+    })
+
+    if (resultError) throw resultError
+
+    await syncCurrentSessionData()
+
+    return {
+      progress: {
+        ...progressItem,
+        ...timing,
+        id: progressRow.id,
+      },
+      result: {
+        ...progressItem,
+        ...timing,
+        id: createId('result'),
+      },
+    }
+  }
+
+  saveProgressRecords([
+    ...existing.filter((item) => item.id !== progressItem.id),
+    progressItem,
+  ])
+
+  const result = {
+    ...progressItem,
+    ...timing,
+    id: createId('result'),
+  }
+  saveResults([result, ...getCompatibleResults()])
 
   return { progress: { ...progressItem, ...timing }, result }
 }
 
 export function getLatestResult(studentId, classCode, chapterId) {
   const result =
-    getResults()
+    getCompatibleResults()
       .filter(
         (item) =>
           item.studentId === studentId &&

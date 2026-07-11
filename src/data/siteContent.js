@@ -127,7 +127,7 @@ export const siteContent = {
       title: 'Learning Experience',
       paragraphs: [
         'Each chapter works like a small learning adventure. Students begin by following the story scene, continue through RPG-style dialogue, read a short tutorial or lesson explanation, and then answer an activity based on the chapter.',
-        'The chapters are arranged in a rainbow bridge timeline. Students must complete and pass each chapter activity with at least 75% before unlocking the next chapter. If they do not pass, they can review the lesson and try again.',
+        'The chapters are arranged in a rainbow bridge timeline. Students must complete each chapter checkpoint with a full score before unlocking the next chapter. If they do not finish it, they can review the lesson and try again.',
       ],
       cards: [
         {
@@ -166,7 +166,7 @@ export const siteContent = {
       },
       {
         question: 'What is the passing score?',
-        answer: 'Students need to score at least 75% to pass a chapter and unlock the next one.',
+        answer: 'Students need a full score on the chapter checkpoint to pass and unlock the next one.',
       },
       {
         question: 'What topics are included in the story?',
@@ -198,15 +198,15 @@ export const siteContent = {
     timelineSubtitle:
       "Follow Alvin's journey through Numberland. Complete each chapter to unlock the next part of the story.",
     timelineInstruction:
-      'Start from the first chapter and pass each activity with at least 75% to unlock the next chapter.',
+      'Start from the first chapter and complete each checkpoint with a full score to unlock the next chapter.',
   },
   result: {
     passedTitle: 'Chapter Passed!',
     passedMessage:
-      'Great job! You scored at least 75%, so this chapter is now complete. The next chapter on the rainbow bridge has been unlocked.',
+      'Great job! You completed the chapter checkpoint with a full score, so this chapter is now complete. The next chapter on the rainbow bridge has been unlocked.',
     failedTitle: 'Try Again',
     failedMessage:
-      'You need at least 75% to pass this chapter. Review the lesson and try the activity again.',
+      'You need a full score to pass this chapter. Review the lesson and try the checkpoint again.',
   },
   dashboards: {
     teacherTitle: 'Teacher Dashboard',

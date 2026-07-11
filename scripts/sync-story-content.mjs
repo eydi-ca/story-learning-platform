@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { chapters } from '../src/data/chapters.js'
+import fs from 'node:fs'
+import vm from 'node:vm'
 import { loadLocalEnv } from './read-env.mjs'
 
 loadLocalEnv()
@@ -14,6 +15,36 @@ if (!supabaseUrl || !serviceRoleKey) {
 const supabase = createClient(supabaseUrl, serviceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false },
 })
+
+function loadChaptersForSync() {
+  const source = fs.readFileSync(new URL('../src/data/chapters.js', import.meta.url), 'utf8')
+  const assetStubs = []
+  const body = source
+    .split('\n')
+    .filter((line) => {
+      const defaultImport = line.match(/^import\s+([A-Za-z_$][\w$]*)\s+from\s+['"].+['"]/)
+      if (defaultImport) {
+        assetStubs.push(`const ${defaultImport[1]} = '';`)
+        return false
+      }
+
+      return !line.startsWith('import ')
+    })
+    .join('\n')
+    .replace('export const chapters =', 'const chapters =')
+
+  const script = new vm.Script(`
+    const getVoiceoverSrc = () => '';
+    const getActivityVoiceoverSrc = () => '';
+    ${assetStubs.join('\n')}
+    ${body}
+    chapters;
+  `)
+
+  return script.runInNewContext({})
+}
+
+const chapters = loadChaptersForSync()
 
 const chapterRows = chapters.map((chapter) => ({
   id: chapter.id,
@@ -31,9 +62,9 @@ const questionRows = chapters.flatMap((chapter) =>
     chapter_id: chapter.id,
     position: index + 1,
     question: activity.question,
-    choices: activity.choices,
-    answer: activity.answer,
-    feedback: activity.feedback,
+    choices: activity.choices ?? [],
+    answer: activity.answer ?? '',
+    feedback: activity.feedback ?? '',
   }))
 )
 
@@ -45,7 +76,7 @@ if (chapterError) throw chapterError
 
 const { error: questionError } = await supabase
   .from('chapter_questions')
-  .upsert(questionRows, { onConflict: 'id' })
+  .upsert(questionRows, { onConflict: 'chapter_id,position' })
 
 if (questionError) throw questionError
 

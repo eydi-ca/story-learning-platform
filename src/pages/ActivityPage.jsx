@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import sampleBackground from '../assets/sample_background.png'
 import ActivityRenderer from '../components/activity/ActivityRenderer'
 import { chapters } from '../data/chapters'
@@ -13,17 +13,39 @@ import {
 } from '../utils/progress'
 import { gradeQuestions, isQuestionAnswered, prepareQuestions } from '../utils/quizUtils'
 
+const selfControlledActivityTypes = new Set([
+  'counting-lock',
+  'gatekeeper',
+  'integer-trial',
+  'memory-match',
+  'real-number-line',
+])
+
+function BackIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M19 12H5m6-6-6 6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function ActivityPage() {
   const { chapterId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const user = getCurrentUser()
   const activeClass = user ? getOrSetActiveClass(user.id) : null
   const chapter = chapters.find((item) => item.id === chapterId)
+  const previewMode = new URLSearchParams(location.search).get('preview') === '1'
+  const isAssessment = Boolean(chapter?.assessmentMode)
   const questions = useMemo(() => prepareQuestions(chapter?.activities ?? []), [chapter])
   const [answers, setAnswers] = useState({})
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(null)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [countingLockRoundIndex, setCountingLockRoundIndex] = useState(0)
+  const [assessmentStarted, setAssessmentStarted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const chapterProgress =
     user && activeClass && chapter
       ? getChapterProgress(user.id, activeClass.classCode, chapter.id)
@@ -42,42 +64,294 @@ function ActivityPage() {
   if (!isChapterUnlocked(user.id, activeClass.classCode, chapter.id)) {
     return <Navigate to="/student/chapters" replace />
   }
-  if (chapterProgress?.passed) {
+  if (chapterProgress?.passed && !previewMode) {
     return <Navigate to={`/student/result/${chapter.id}`} replace />
   }
 
   const currentQuestion = questions[currentIndex]
   const onLastQuestion = currentIndex === questions.length - 1
   const currentValue = currentQuestion ? answers[currentQuestion.id] : undefined
+  const isCountingLock = currentQuestion?.type === 'counting-lock'
+  const isSelfControlledActivity = selfControlledActivityTypes.has(currentQuestion?.type)
 
-  async function handleSubmit() {
-    if (questions.some((question) => !isQuestionAnswered(question, answers[question.id]))) {
+  function getSubmittableAnswer(question, answer) {
+    if (question?.type === 'integer-trial' && answer?.puzzle?.solved) {
+      return {
+        ...answer,
+        completionAcknowledged: true,
+      }
+    }
+
+    return answer
+  }
+
+  async function handleSubmit(nextAnswers = answers) {
+    if (isSubmitting) return
+
+    const submittedAnswers = Object.fromEntries(
+      questions.map((question) => [
+        question.id,
+        getSubmittableAnswer(question, nextAnswers[question.id]),
+      ])
+    )
+
+    if (questions.some((question) => !isQuestionAnswered(question, submittedAnswers[question.id]))) {
       setError('Please complete every activity challenge before submitting.')
       return
     }
 
-    const graded = gradeQuestions(questions, answers)
-    const saved = await saveActivityResult({
-      studentId: user.id,
-      classId: activeClass.id,
-      classCode: activeClass.classCode,
-      chapterId: chapter.id,
-      ...graded,
-    })
-    if (saved?.error) {
-      setError(saved.error)
-      return
+    const graded = gradeQuestions(questions, submittedAnswers)
+
+    setIsSubmitting(true)
+    try {
+      if (previewMode) {
+        const percentage = graded.total > 0 ? Math.round((graded.score / graded.total) * 100) : 0
+        navigate(`/student/result/${chapter.id}`, {
+          state: {
+            previewResult: {
+              ...graded,
+              percentage,
+              passed: isAssessment || percentage >= 100,
+              completedAt: new Date().toISOString(),
+              totalElapsedMs: chapterProgress?.totalElapsedMs ?? 0,
+              latestAttemptElapsedMs: 0,
+              passedSubmittedAt: chapterProgress?.passedSubmittedAt ?? null,
+              previewMode: true,
+            },
+          },
+        })
+        return
+      }
+
+      const saved = await saveActivityResult({
+        studentId: user.id,
+        classId: activeClass.id,
+        classCode: activeClass.classCode,
+        chapterId: chapter.id,
+        ...graded,
+        passedOverride: isAssessment ? true : undefined,
+      })
+      if (saved?.error) {
+        setError(saved.error)
+        return
+      }
+      navigate(`/student/result/${chapter.id}`)
+    } catch {
+      setError('We could not submit the assessment. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
-    navigate(`/student/result/${chapter.id}`)
   }
 
   function handleNext() {
-    if (onLastQuestion) {
-      void handleSubmit()
+    const submittedCurrentAnswer = getSubmittableAnswer(
+      currentQuestion,
+      currentQuestion ? answers[currentQuestion.id] : undefined
+    )
+    const submittedAnswers =
+      currentQuestion && submittedCurrentAnswer !== answers[currentQuestion.id]
+        ? {
+            ...answers,
+            [currentQuestion.id]: submittedCurrentAnswer,
+          }
+        : answers
+
+    if (currentQuestion && !isQuestionAnswered(currentQuestion, submittedCurrentAnswer)) {
+      setError('Please answer this item before continuing.')
       return
     }
 
+    if (submittedAnswers !== answers) {
+      setAnswers(submittedAnswers)
+    }
+
+    if (onLastQuestion) {
+      void handleSubmit(submittedAnswers)
+      return
+    }
+
+    setError('')
     setCurrentIndex((value) => value + 1)
+  }
+
+  function handleAssessmentSubmit() {
+    void handleSubmit(answers)
+  }
+
+  const currentSubmittableValue = getSubmittableAnswer(currentQuestion, currentValue)
+  const currentQuestionComplete = currentQuestion
+    ? isQuestionAnswered(currentQuestion, currentSubmittableValue)
+    : false
+  const showActivityFooterActions = !isSelfControlledActivity || currentQuestionComplete
+
+  if (isAssessment) {
+    return (
+      <section className="relative min-h-[calc(100vh-5rem)] bg-slate-50 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                Final Assessment
+              </p>
+              <h1 className="mt-2 text-3xl font-black text-slate-950">{chapter.title}</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                Complete all items carefully. Your answers will be recorded when you submit the assessment.
+              </p>
+            </div>
+            <Link
+              className="inline-flex self-start rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:border-slate-400"
+              to="/student/chapters"
+            >
+              Back to chapters
+            </Link>
+          </div>
+
+          <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_16rem]">
+            <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">
+                  Question {currentIndex + 1} of {questions.length}
+                </p>
+                <span className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">
+                  {Object.keys(answers).length}/{questions.length} answered
+                </span>
+              </div>
+
+              {currentQuestion ? (
+                <fieldset className="mt-6">
+                  <legend className="text-xl font-black leading-8 text-slate-950">
+                    {currentQuestion.question}
+                  </legend>
+                  <div className="mt-5 grid gap-3">
+                    {currentQuestion.choices.map((choice, choiceIndex) => {
+                      const active = answers[currentQuestion.id] === choice
+                      return (
+                        <label
+                          key={choice}
+                          className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 text-sm font-semibold transition ${
+                            active
+                              ? 'border-sky-500 bg-sky-50 text-slate-950 shadow-[0_0_0_1px_rgba(14,165,233,0.15)]'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-slate-50'
+                          }`}
+                        >
+                          <input
+                            className="mt-1"
+                            type="radio"
+                            name={currentQuestion.id}
+                            value={choice}
+                            checked={active}
+                            onChange={() => {
+                              setAnswers((current) => ({
+                                ...current,
+                                [currentQuestion.id]: choice,
+                              }))
+                              setError('')
+                            }}
+                          />
+                          <span className="font-black text-slate-400">
+                            {String.fromCharCode(65 + choiceIndex)}.
+                          </span>
+                          <span>{choice}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </fieldset>
+              ) : null}
+
+              {error ? (
+                <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                  {error}
+                </p>
+              ) : null}
+
+              <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5">
+                <button
+                  type="button"
+                  className="rounded-lg border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={currentIndex === 0}
+                  onClick={() => {
+                    setError('')
+                    setCurrentIndex((value) => Math.max(0, value - 1))
+                  }}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg bg-slate-950 px-5 py-3 font-bold text-white hover:bg-slate-800"
+                  disabled={isSubmitting}
+                  onClick={onLastQuestion && isAssessment ? handleAssessmentSubmit : handleNext}
+                >
+                  {onLastQuestion ? (isSubmitting ? 'Submitting...' : 'Submit Assessment') : 'Next'}
+                </button>
+              </div>
+            </article>
+
+            <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">
+                Items
+              </p>
+              <div className="mt-4 grid grid-cols-5 gap-2 lg:grid-cols-3">
+                {questions.map((question, index) => {
+                  const answered = isQuestionAnswered(question, answers[question.id])
+                  return (
+                    <button
+                      key={question.id}
+                      type="button"
+                      className={`h-10 rounded-lg border text-sm font-black transition ${
+                        index === currentIndex
+                          ? 'border-sky-500 bg-sky-50 text-sky-800'
+                          : answered
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
+                      }`}
+                      onClick={() => {
+                        setError('')
+                        setCurrentIndex(index)
+                      }}
+                    >
+                      {index + 1}
+                    </button>
+                  )
+                })}
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        {!assessmentStarted ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 backdrop-blur-sm">
+            <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                Ready Check
+              </p>
+              <h2 className="mt-3 text-2xl font-black text-slate-950">
+                Start Final Assessment
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                This assessment covers the full Numberland journey. Read each item carefully before submitting.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-end gap-3">
+                <Link
+                  className="rounded-lg border border-slate-300 bg-white px-5 py-3 font-bold text-slate-700"
+                  to="/student/chapters"
+                >
+                  Not yet
+                </Link>
+                <button
+                  type="button"
+                  className="rounded-lg bg-slate-950 px-5 py-3 font-bold text-white hover:bg-slate-800"
+                  onClick={() => setAssessmentStarted(true)}
+                >
+                  Start test
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </section>
+    )
   }
 
   return (
@@ -96,14 +370,14 @@ function ActivityPage() {
             <div className="flex items-start justify-between gap-4">
               <Link
                 className="story-scene-skip-button inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold text-white"
-                to={`/student/chapter/${chapter.id}`}
+                to={previewMode ? `/student/result/${chapter.id}` : `/student/chapter/${chapter.id}`}
               >
-                <span aria-hidden="true">←</span>
-                <span>Back to chapter</span>
+                <BackIcon />
+                <span>{previewMode ? 'Back to results' : 'Back to chapter'}</span>
               </Link>
 
               <div className="hidden rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/80 backdrop-blur sm:inline-flex">
-                Activity Mode
+                {previewMode ? 'Activity Test Mode' : 'Activity Mode'}
               </div>
             </div>
 
@@ -113,28 +387,16 @@ function ActivityPage() {
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-white/80">
-                        Activity Challenge
+                        {previewMode ? 'Activity Test' : 'Activity Challenge'}
                       </span>
                       <h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">{chapter.title}</h1>
                       <p className="mt-2 text-sm leading-7 text-white/82">
-                        Question {currentIndex + 1} of {questions.length}
+                        {isCountingLock
+                          ? `Round ${countingLockRoundIndex + 1}`
+                          : `Question ${currentIndex + 1} of ${questions.length}`}
                       </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      {questions.map((question, index) => (
-                        <button
-                          key={question.id}
-                          type="button"
-                          className={`story-question-chip rounded-full px-3 py-2 text-xs font-black ${
-                            index === currentIndex ? 'story-question-chip-active' : ''
-                          }`}
-                          onClick={() => setCurrentIndex(index)}
-                        >
-                          {index + 1}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
                   {error ? (
@@ -151,6 +413,7 @@ function ActivityPage() {
                         setAnswers((current) => ({ ...current, [currentQuestion.id]: nextAnswer }))
                         setError('')
                       }}
+                      onRoundChange={setCountingLockRoundIndex}
                       dragging={dragging}
                       setDragging={setDragging}
                     />
@@ -160,30 +423,40 @@ function ActivityPage() {
                     <div className="text-sm font-semibold text-white/75">
                       {currentQuestion?.type === 'drag-order'
                         ? 'Arrange the tiles in the correct order, then continue.'
-                        : currentQuestion?.type === 'drag-group'
-                          ? 'Drag matching tiles into the zone or tap them to select.'
-                          : currentQuestion?.type === 'match-pairs'
-                            ? 'Connect Side A to Side B by dragging or tapping to create each match.'
-                          : 'Choose the best answer, then continue.'}
+                        : currentQuestion?.type === 'integer-trial'
+                          ? 'Obtain the map, torch, and key in order, then solve the final town map.'
+                        : currentQuestion?.type === 'tile-puzzle'
+                          ? 'Restore the image by dragging the tiles into the correct places.'
+                        : currentQuestion?.type === 'counting-lock'
+                          ? 'Unlock each slot by selecting the only counting number in it.'
+                          : currentQuestion?.type === 'drag-group'
+                            ? 'Drag matching tiles into the zone or tap them to select.'
+                            : currentQuestion?.type === 'match-pairs'
+                              ? 'Connect Side A to Side B by dragging or tapping to create each match.'
+                              : 'Choose the best answer, then continue.'}
                     </div>
 
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
-                        className="outline-magic-button interactive-button rounded-full px-5 py-3 font-bold text-white disabled:opacity-50"
-                        disabled={currentIndex === 0}
-                        onClick={() => setCurrentIndex((value) => Math.max(0, value - 1))}
-                      >
-                        Previous
-                      </button>
-                      <button
-                        type="button"
-                        className="gold-button interactive-button rounded-full px-5 py-3 font-bold"
-                        onClick={handleNext}
-                      >
-                        {onLastQuestion ? 'Submit Activity' : 'Next'}
-                      </button>
-                    </div>
+                    {showActivityFooterActions ? (
+                      <div className="flex flex-wrap gap-3">
+                        {!isSelfControlledActivity ? (
+                          <button
+                            type="button"
+                            className="outline-magic-button interactive-button rounded-full px-5 py-3 font-bold text-white disabled:opacity-50"
+                            disabled={currentIndex === 0}
+                            onClick={() => setCurrentIndex((value) => Math.max(0, value - 1))}
+                          >
+                            Previous
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="gold-button interactive-button rounded-full px-5 py-3 font-bold"
+                          onClick={handleNext}
+                        >
+                          {onLastQuestion ? (previewMode ? 'Proceed' : 'Submit Activity') : 'Next'}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>

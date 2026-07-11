@@ -18,7 +18,7 @@ const teamAvatarByMemberName = {
   'Bagaoisan, Mark Alvin': 'mark',
   'Caronan, Emmanuel': 'emman',
   'Danganon, Adrian Lone': 'adrian',
-  'Quiseo, Ronica': 'nature_healer',
+  'Quiseo, Ronica': 'ronica',
   'Soriano, Jack Angelo': 'jack',
 }
 
