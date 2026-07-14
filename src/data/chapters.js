@@ -94,12 +94,12 @@ export const chapters = [
       },
       {
         speaker: 'System',
-        text: 'Counting Numbers detected: Positive whole numbers only.',
+        text: 'Counting Numbers detected: Positive numbers only.',
         audioSrc: voiceover(6, 'SM1P6'),
         backgroundSrc: chapter1Page6,
       },
       {
-        speaker: 'System',
+        speaker: 'System', 
         text: 'Forest altar requires counting numbers to activate.',
         audioSrc: voiceover(6, 'SM2P6'),
         backgroundSrc: chapter1Page6,
@@ -156,7 +156,7 @@ export const chapters = [
     tutorial: {
       title: 'Counting Numbers',
       summary:
-        'Counting numbers are the positive whole numbers we use when counting things one by one. They begin at 1 and continue upward: 1, 2, 3, 4, 5, and so on. They do not include 0, negative numbers, fractions, or decimals.',
+        'Counting numbers are the positive numbers we use when counting things one by one. They begin at 1 and continue upward: 1, 2, 3, 4, 5, and so on. They do not include 0, negative numbers, fractions, or decimals.',
       points: [
         'Counting numbers begin at 1.',
         'They help us count things one by one.',
@@ -811,11 +811,17 @@ export const chapters = [
       { speaker: 'System', text: 'Boundary Rule: If a number can be written as a fraction, it belongs into rational country.', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, '1st SM1P21 (NOTE_ pakilagay sa unahan pls) ') },
       { speaker: 'Alvin', text: 'I stepped forward.', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'P21S1') },
       { speaker: 'Alvin', text: '"This can be written as a fraction," I said, pointing to 1.', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'P21S2') },
+      { speaker: 'System', text: 'VERIFIED', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'Verified ') },
       { speaker: 'Alvin', text: '"This can be written as 3/4,", I said, about 0.75.', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'P21S3') },
+      { speaker: 'System', text: 'VERIFIED', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'Verified ') },
       { speaker: 'Alvin', text: '"The decimal repeats,", I said, about 1.6666....', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'P21S4') },
+      { speaker: 'System', text: 'VERIFIED', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'Verified ') },
       { speaker: 'Alvin', text: '"This decimal never repeats,", I said, about 1.6774737....', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'P21S5') },
+      { speaker: 'System', text: 'DENIED', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'Denied ') },
       { speaker: 'Alvin', text: '"√2 cannot be written as a fraction," I explained.', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'P21S6') },
+      { speaker: 'System', text: 'DENIED', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'Denied ') },
       { speaker: 'Alvin', text: '"No fraction can represent π exactly" I said.', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'P21S7') },
+      { speaker: 'System', text: 'DENIED', backgroundSrc: chapter4Page21, audioSrc: voiceover(21, 'Denied ') },
       { speaker: 'Alvin', text: 'I guided 1, 0.75, and 1.6666... inside.', backgroundSrc: chapter4Page22, audioSrc: voiceover(22, 'S1P22') },
       { speaker: 'Alvin', text: 'I led √2, 1.674737..., and π back to the Irrational Country.', backgroundSrc: chapter4Page22, audioSrc: voiceover(22, 'S2P22') },
       { speaker: 'System', text: 'Boundary secured.', backgroundSrc: chapter4Page22, audioSrc: voiceover(22, 'SM1P22') },

@@ -13,22 +13,33 @@ export function preloadAudio(src) {
   const promise = new Promise((resolve) => {
     const audio = new Audio(src)
     let settled = false
-    const timeout = window.setTimeout(() => finish(), 8000)
+    const timeout = window.setTimeout(() => finish(false), 8000)
 
-    function finish() {
+    function finish(ready = true) {
       if (settled) return
       settled = true
       window.clearTimeout(timeout)
       audio.removeEventListener('canplaythrough', finish)
       audio.removeEventListener('loadeddata', finish)
-      audio.removeEventListener('error', finish)
+      audio.removeEventListener('error', handleError)
+
+      if (!ready) {
+        preloadCache.delete(src)
+        resolve(null)
+        return
+      }
+
       resolve(audio)
+    }
+
+    function handleError() {
+      finish(false)
     }
 
     audio.preload = 'auto'
     audio.addEventListener('canplaythrough', finish)
     audio.addEventListener('loadeddata', finish)
-    audio.addEventListener('error', finish)
+    audio.addEventListener('error', handleError)
     audio.load()
   })
 

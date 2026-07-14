@@ -469,18 +469,13 @@ function IntegerTrialActivity({ question, value, onChange }) {
             <div className="mx-auto w-full max-w-[21rem] sm:max-w-[28rem] md:max-w-[34rem]">
               <div className="relative aspect-square overflow-hidden rounded-[0.9rem] border border-white/10 bg-slate-950/80">
                 {screen === 'puzzle-solved' ? (
-                  <>
-                    <div className="pointer-events-none absolute left-1/2 top-5 z-40 -translate-x-1/2 animate-[bounce_1.1s_ease-in-out_2] rounded-full border border-emerald-200/55 bg-emerald-400/16 px-4 py-2 text-center shadow-[0_0_30px_rgba(52,211,153,0.28)] backdrop-blur">
-                      <p className="text-[0.72rem] font-black uppercase tracking-[0.18em] text-emerald-100/80">
-                        Treasure Unlocked
-                      </p>
-                      <p className="mt-1 text-sm font-bold text-white sm:text-base">
-                        Map completed successfully
-                      </p>
-                    </div>
-                  </>
+                  <img
+                    src={question.imageSrc}
+                    alt="Completed treasure map"
+                    className="h-full w-full object-cover"
+                  />
                 ) : null}
-                {Array.from({ length: tileCount }).map((_, index) => {
+                {screen !== 'puzzle-solved' ? Array.from({ length: tileCount }).map((_, index) => {
                   const tileId = puzzle?.order?.[index]
                   if (tileId == null) return null
 
@@ -527,7 +522,7 @@ function IntegerTrialActivity({ question, value, onChange }) {
                       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(15,23,42,0.12))]" />
                     </button>
                   )
-                })}
+                }) : null}
               </div>
             </div>
 

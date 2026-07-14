@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { siteContent } from '../data/siteContent'
 import { getClassById, getClassStudents } from '../utils/classUtils'
-import { getClassCompletionSummary } from '../utils/progress'
+import { formatClockTime, getClassCompletionSummary } from '../utils/progress'
 
 function SearchIcon() {
   return (
@@ -55,7 +55,7 @@ function TeacherClassStudents() {
                   <td className="p-4 text-[color:var(--muted)]">{summary.completedCount}</td>
                   <td className="p-4 text-[color:var(--muted)]">{summary.latest ? `${summary.latest.percentage}%` : '-'}</td>
                   <td className="p-4 text-[color:var(--muted)]">{summary.overallPercentage === 100 ? 'Complete' : 'In progress'}</td>
-                  <td className="p-4 text-[color:var(--muted)]">{summary.latest ? new Date(summary.latest.completedAt).toLocaleString() : '-'}</td>
+                  <td className="p-4 text-[color:var(--muted)]">{summary.latest ? formatClockTime(summary.latest.completedAt) : '-'}</td>
                   <td className="p-4 font-semibold text-violet-700">View Details</td>
                 </tr>
               )

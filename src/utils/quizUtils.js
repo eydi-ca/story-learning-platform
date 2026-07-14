@@ -2,12 +2,15 @@ export function shuffle(items) {
   return [...items].sort(() => Math.random() - 0.5)
 }
 
-export function prepareQuestions(questions) {
-  return shuffle(questions).map((question) => ({
+export function prepareQuestions(questions, options = {}) {
+  const { shuffleQuestions = true, shuffleChoices = true } = options
+  const orderedQuestions = shuffleQuestions ? shuffle(questions) : [...questions]
+
+  return orderedQuestions.map((question) => ({
     ...question,
     type: question.type ?? 'multiple-choice',
     choices:
-      question.type === 'counting-lock' || question.type === 'gatekeeper' || !question.choices
+      !shuffleChoices || question.type === 'counting-lock' || question.type === 'gatekeeper' || !question.choices
         ? question.choices
         : shuffle(question.choices),
     rightItems: question.rightItems ? shuffle(question.rightItems) : question.rightItems,
@@ -88,6 +91,41 @@ function formatMatchPairsAnswer(question, answer) {
   return Object.entries(answer)
     .map(([leftId, rightId]) => `${leftLabelMap[leftId] ?? leftId} -> ${rightLabelMap[rightId] ?? rightId}`)
     .join('; ')
+}
+
+function getIntegerTrialStages(question) {
+  if (Array.isArray(question.stages) && question.stages.length > 0) {
+    return question.stages
+  }
+
+  const prompts = Array.isArray(question.prompts) ? question.prompts.slice(0, 6) : []
+  const itemMeta = [
+    { id: 'map-stage', itemId: 'map', itemLabel: 'Map' },
+    { id: 'torch-stage', itemId: 'torch', itemLabel: 'Torch' },
+    { id: 'key-stage', itemId: 'key', itemLabel: 'Key' },
+  ]
+
+  return itemMeta
+    .map((item, index) => ({
+      ...item,
+      prompts: prompts.slice(index * 2, index * 2 + 2),
+    }))
+    .filter((stage) => stage.prompts.length > 0)
+}
+
+function formatIntegerTrialAnswer(question, answer) {
+  const stages = getIntegerTrialStages(question)
+  const rows = stages.flatMap((stage) =>
+    (stage.prompts ?? []).map((prompt) => {
+      const studentChoice = answer?.stageAnswers?.[stage.id]?.[prompt.id]
+      return `${prompt.question}: ${studentChoice || prompt.answer}`
+    })
+  )
+  const obtainedRows = stages
+    .filter((stage) => answer?.obtainedItems?.includes(stage.itemId))
+    .map((stage) => `${stage.itemLabel === 'Map' ? 'Treasure Map' : stage.itemLabel} obtained`)
+
+  return [...rows, ...obtainedRows].join('; ')
 }
 
 function buildIncorrectFeedback(question) {
@@ -195,9 +233,7 @@ export function gradeQuestions(questions, selectedAnswers) {
             })()
         : type === 'integer-trial'
           ? (() => {
-              const stageCount = Array.isArray(question.stages)
-                ? question.stages.length
-                : Math.ceil((question.prompts?.length ?? 0) / 2)
+              const stageCount = getIntegerTrialStages(question).length
               return Boolean(
                 (studentAnswer?.obtainedItems?.length ?? 0) >= stageCount &&
                   studentAnswer?.puzzle?.solved &&
@@ -224,7 +260,7 @@ export function gradeQuestions(questions, selectedAnswers) {
         : type === 'memory-match'
         ? formatAnswer(buildMemoryMatchAnswerMap(question))
         : type === 'integer-trial'
-        ? 'All sacred items obtained and final puzzle solved'
+        ? formatIntegerTrialAnswer(question, studentAnswer)
         : type === 'gatekeeper'
         ? formatAnswer(buildGatekeeperAnswerMap(question))
         : type === 'match-pairs'
@@ -240,7 +276,7 @@ export function gradeQuestions(questions, selectedAnswers) {
         : type === 'memory-match'
         ? formatAnswer(studentAnswer?.classifications ?? {})
         : type === 'integer-trial'
-        ? `Items obtained: ${(studentAnswer?.obtainedItems ?? []).join(', ') || 'None'}; Puzzle: ${studentAnswer?.puzzle?.rows ?? '-'}x${studentAnswer?.puzzle?.columns ?? '-'}; Solved: ${studentAnswer?.puzzle?.solved ? 'Yes' : 'No'}; Proceeded: ${studentAnswer?.completionAcknowledged ? 'Yes' : 'No'}`
+        ? formatIntegerTrialAnswer(question, studentAnswer)
         : type === 'gatekeeper'
         ? formatAnswer(studentAnswer?.responses)
         : type === 'match-pairs'

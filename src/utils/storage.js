@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   activeClass: 'story_app_active_class',
   chapterTiming: 'story_app_chapter_timing',
   chapterAttemptSessions: 'story_app_chapter_attempt_sessions',
+  chapterStorySessions: 'story_app_chapter_story_sessions',
 }
 
 const CURRENT_CURRICULUM_VERSION = 'chapter-placeholders-v1'
@@ -54,6 +55,7 @@ export function ensureSeedData() {
     localStorage.removeItem(STORAGE_KEYS.results)
     localStorage.removeItem(STORAGE_KEYS.chapterTiming)
     localStorage.removeItem(STORAGE_KEYS.chapterAttemptSessions)
+    localStorage.removeItem(STORAGE_KEYS.chapterStorySessions)
     localStorage.setItem(STORAGE_KEYS.curriculumVersion, CURRENT_CURRICULUM_VERSION)
   }
 

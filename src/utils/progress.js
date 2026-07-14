@@ -18,10 +18,32 @@ export function getProgressKey({ studentId, classCode, chapterId }) {
 }
 
 export function formatElapsedTime(totalMs = 0) {
-  const totalSeconds = Math.max(0, Math.round(totalMs / 1000))
+  const totalMinutes = Math.max(0, Math.round(totalMs / 60000))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+export function formatStopwatchTime(totalMs = 0) {
+  const totalSeconds = Math.max(0, Math.floor(totalMs / 1000))
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
-  return `${minutes}m ${String(seconds).padStart(2, '0')}s`
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+export function formatClockTime(value) {
+  if (!value) return '--:--'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '--:--'
+
+  const hour = date.getHours()
+  const period = hour >= 12 ? 'PM' : 'AM'
+  const hour12 = hour % 12 || 12
+
+  return `${String(hour12).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} ${period}`
 }
 
 function readTimingMap() {
@@ -38,6 +60,14 @@ function readAttemptSessions() {
 
 function writeAttemptSessions(value) {
   writeJson(STORAGE_KEYS.chapterAttemptSessions, value)
+}
+
+function readChapterStorySessions() {
+  return readJson(STORAGE_KEYS.chapterStorySessions, {})
+}
+
+function writeChapterStorySessions(value) {
+  writeJson(STORAGE_KEYS.chapterStorySessions, value)
 }
 
 function getChapterDefinition(chapterId) {
@@ -169,6 +199,35 @@ export function getProgressForClass(studentId, classId) {
     .map(withTimingMetadata)
 }
 
+export function getChapterStorySession(studentId, classCode, chapterId) {
+  const key = getProgressKey({ studentId, classCode, chapterId })
+  return readChapterStorySessions()[key] ?? null
+}
+
+export function saveChapterStorySession({
+  studentId,
+  classCode,
+  chapterId,
+  session,
+}) {
+  const key = getProgressKey({ studentId, classCode, chapterId })
+  writeChapterStorySessions({
+    ...readChapterStorySessions(),
+    [key]: {
+      ...session,
+      updatedAt: stamp(),
+    },
+  })
+}
+
+export function clearChapterStorySession({ studentId, classCode, chapterId }) {
+  const key = getProgressKey({ studentId, classCode, chapterId })
+  const sessions = readChapterStorySessions()
+  if (!sessions[key]) return
+  const { [key]: removed, ...rest } = sessions
+  writeChapterStorySessions(rest)
+}
+
 export function getChapterProgress(studentId, classCode, chapterId) {
   return withTimingMetadata(
     getCompatibleProgressRecords().find(
@@ -207,6 +266,7 @@ export async function saveActivityResult({
   total,
   answers,
   passedOverride,
+  allowRetakeAfterPass = false,
 }) {
   const percentage = total > 0 ? Math.round((score / total) * 100) : 100
   const passed = typeof passedOverride === 'boolean' ? passedOverride : percentage >= 100
@@ -326,7 +386,7 @@ export async function saveChapterCompletion({
   const existing = getCompatibleProgressRecords()
   const previous = getChapterProgress(studentId, classCode, chapterId)
 
-  if (previous?.passed) {
+  if (previous?.passed && !allowRetakeAfterPass) {
     return { progress: previous }
   }
 

@@ -58,11 +58,13 @@ function StoryScene({
   narrationComplete,
   typingComplete,
   typewriterStart,
+  isReviewingPage = false,
   skipSignal,
   repeatSignal,
   revealedPageIndex = 0,
   awaitingPageScroll = false,
   canSkipPage = false,
+  completedPageIndexes = [],
   mode = 'dialogue',
   onTypingComplete,
   onNarrationStart,
@@ -83,12 +85,14 @@ function StoryScene({
   showTitleCover = false,
   showRetakeActivity = false,
   onRetakeActivity = null,
+  afterPagesContent = null,
 }) {
   const dialogueLeadRatio = 0.72
   const [typingDurationMs, setTypingDurationMs] = useState(null)
   const scrollRef = useRef(null)
   const pageRefs = useRef([])
   const summaryRef = useRef(null)
+  const afterPagesRef = useRef(null)
   const pages = useMemo(() => buildDialoguePages(chapter), [chapter])
   const currentPageIndex = Math.max(
     0,
@@ -97,12 +101,20 @@ function StoryScene({
   const currentPage = pages[currentPageIndex] ?? null
   const speaker = getSpeakerConfig(chapter, dialogue?.speaker)
   const isSystemTurn = Boolean(speaker.isSystem)
+  const storyPlaybackIsActive = mode === 'dialogue' || isReviewingPage
   const showReplayPageAction = canSkipPage && awaitingPageScroll
   const dialogueAudioSources = useMemo(() => getDialogueAudioSources(dialogue), [dialogue])
+  const highestCompletedPageIndex = completedPageIndexes.length
+    ? Math.max(...completedPageIndexes)
+    : -1
+  const visiblePageCount = Math.min(
+    pages.length,
+    Math.max(revealedPageIndex, currentPageIndex, highestCompletedPageIndex) + 1
+  )
   const visiblePages =
-    mode === 'summary'
+    mode === 'summary' || (mode === 'activity' && afterPagesContent)
       ? pages
-      : pages.slice(0, Math.min(revealedPageIndex + 1, pages.length))
+      : pages.slice(0, visiblePageCount)
 
   useEffect(() => {
     const upcomingSources = chapter.dialogues
@@ -111,6 +123,16 @@ function StoryScene({
 
     preloadAudioSources(upcomingSources)
   }, [chapter.dialogues, dialogueIndex])
+
+  useEffect(() => {
+    if (!currentPage) return
+
+    const pageSources = chapter.dialogues
+      .slice(currentPage.startIndex, currentPage.endIndex + 1)
+      .flatMap((item) => getDialogueAudioSources(item))
+
+    preloadAudioSources(pageSources)
+  }, [chapter.dialogues, currentPage])
 
   useEffect(() => {
     if (!dialogueAudioSources.length) {
@@ -159,7 +181,7 @@ function StoryScene({
   }, [mode])
 
   useEffect(() => {
-    if (showTitleCover || mode !== 'dialogue') return undefined
+    if (showTitleCover || !storyPlaybackIsActive || isReviewingPage) return undefined
 
     const root = scrollRef.current
     const target = pageRefs.current[currentPageIndex]
@@ -177,7 +199,7 @@ function StoryScene({
     const frame = window.requestAnimationFrame(syncScroll)
 
     return () => window.cancelAnimationFrame(frame)
-  }, [currentPageIndex, dialogueIndex, mode, revealedPageIndex, showTitleCover])
+  }, [currentPageIndex, dialogueIndex, isReviewingPage, revealedPageIndex, showTitleCover, storyPlaybackIsActive])
 
   useEffect(() => {
     if (!awaitingPageScroll || mode !== 'dialogue') return undefined
@@ -269,6 +291,19 @@ function StoryScene({
     </div>
   )
 
+  function handleReplayPage(pageStart, pageIndex) {
+    const page = pages[pageIndex]
+    if (page) {
+      const pageSources = chapter.dialogues
+        .slice(page.startIndex, page.endIndex + 1)
+        .flatMap((item) => getDialogueAudioSources(item))
+
+      preloadAudioSources(pageSources)
+    }
+
+    onReplayPage?.(pageStart, pageIndex)
+  }
+
   return (
     <div className="story-scene-shell overflow-hidden rounded-[1.4rem] border border-[rgb(216_185_120_/_0.7)] shadow-[0_24px_60px_rgb(74_42_22_/_0.18)]">
       {showTitleCover ? (
@@ -277,18 +312,18 @@ function StoryScene({
             <img
               src={chapter.scene.coverImage || landingPhoto}
               alt={`${chapter.title} cover`}
-              className="h-full w-full object-contain object-center"
+              className="h-full w-full object-cover object-center"
             />
           </div>
         </section>
       ) : (
         <>
           <AudioPlayer
-            text={mode === 'dialogue' && typewriterStart ? dialogue?.text ?? '' : ''}
-            src={mode === 'dialogue' && typewriterStart ? dialogueAudioSources[0] ?? '' : ''}
-            srcs={mode === 'dialogue' && typewriterStart ? dialogueAudioSources : []}
+            text={storyPlaybackIsActive && typewriterStart ? dialogue?.text ?? '' : ''}
+            src={storyPlaybackIsActive && typewriterStart ? dialogueAudioSources[0] ?? '' : ''}
+            srcs={storyPlaybackIsActive && typewriterStart ? dialogueAudioSources : []}
             title={`${speaker.label} narration`}
-            autoPlay={mode === 'dialogue' && typewriterStart}
+            autoPlay={storyPlaybackIsActive && typewriterStart}
             replayKey={`${dialogueIndex}-${repeatSignal}-${mode}`}
             showControls={false}
             onPlaybackStart={onNarrationStart}
@@ -300,8 +335,12 @@ function StoryScene({
             className="story-scene h-[calc(100vh-4.75rem)] min-h-[33rem] snap-y snap-mandatory overflow-y-auto bg-slate-950/98 scroll-smooth"
           >
             {visiblePages.map((page, index) => {
-              const isCurrentPage = mode === 'dialogue' && index === currentPageIndex
-              const isCompletedPage = mode === 'summary' ? index <= currentPageIndex : index < currentPageIndex
+              const isCurrentPage = storyPlaybackIsActive && index === currentPageIndex
+              const pageWasCompleted = completedPageIndexes.includes(index)
+              const isCompletedPage =
+                mode === 'summary' || (mode === 'activity' && afterPagesContent)
+                  ? (index <= currentPageIndex || pageWasCompleted) && !isCurrentPage
+                  : pageWasCompleted && !isCurrentPage
               const pageSpeaker = isCurrentPage ? speaker : null
               const showScrollPrompt = isCurrentPage && awaitingPageScroll && index < pages.length - 1
 
@@ -317,7 +356,7 @@ function StoryScene({
                     <img
                       src={page.backgroundSrc}
                       alt={`${chapter.title} page ${page.pageNumber}`}
-                      className="h-full w-full flex-1 object-contain object-center"
+                      className="h-full w-full flex-1 object-cover object-center"
                     />
                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[rgb(15_23_42_/_0.14)] via-transparent to-[rgb(15_23_42_/_0.24)]" />
                     <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-3 sm:p-4 lg:p-5">
@@ -387,7 +426,7 @@ function StoryScene({
                                 <button
                                   type="button"
                                   className="ml-auto outline-magic-button interactive-button rounded-full px-3 py-1 text-[0.7rem] font-bold"
-                                  onClick={() => onReplayPage?.(currentPage?.startIndex ?? page.startIndex, index)}
+                                  onClick={() => handleReplayPage(currentPage?.startIndex ?? page.startIndex, index)}
                                 >
                                   Replay page
                                 </button>
@@ -397,11 +436,16 @@ function StoryScene({
                         />
                       </div>
                     ) : isCompletedPage ? (
-                      <div className="mx-auto flex w-full max-w-5xl justify-end">
+                      <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-end gap-3">
+                        {mode === 'activity' && afterPagesContent && index === pages.length - 1 ? (
+                          <p className="mr-auto text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-white/55">
+                            Scroll down to continue to the activity
+                          </p>
+                        ) : null}
                         <button
                           type="button"
                           className="outline-magic-button interactive-button rounded-full px-3 py-1.5 text-xs font-bold"
-                          onClick={() => onReplayPage?.(page.startIndex, index)}
+                          onClick={() => handleReplayPage(page.startIndex, index)}
                         >
                           Replay page {page.pageNumber}
                         </button>
@@ -415,6 +459,15 @@ function StoryScene({
                 </section>
               )
             })}
+
+            {mode === 'activity' && afterPagesContent ? (
+              <section
+                ref={afterPagesRef}
+                className="min-h-[calc(100vh-4.75rem)] snap-start bg-slate-950"
+              >
+                {afterPagesContent}
+              </section>
+            ) : null}
 
             {mode === 'summary' ? (
               <section

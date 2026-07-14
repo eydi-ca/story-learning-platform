@@ -1,5 +1,6 @@
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { chapters } from '../data/chapters'
+import { formatClockTime } from '../utils/progress'
 import { getStudentSummary } from '../utils/progressUtils'
 import { getStudentById, getStudentProgress } from '../utils/storage'
 
@@ -21,7 +22,7 @@ function AdminStudentDetail() {
           <h1 className="text-4xl font-black text-slate-900">{student.name}</h1>
           <p className="mt-3 text-slate-600">
             {student.section} - {student.classCode} - Joined{' '}
-            {new Date(student.createdAt).toLocaleString()}
+            {formatClockTime(student.createdAt)}
           </p>
         </div>
 
@@ -75,7 +76,7 @@ function AdminStudentDetail() {
                       {result.chapterTitle}
                     </h3>
                     <p className="mt-1 text-sm text-slate-500">
-                      {new Date(result.completedAt).toLocaleString()}
+                      {formatClockTime(result.completedAt)}
                     </p>
                   </div>
                   <p className="text-sm font-semibold text-slate-700">

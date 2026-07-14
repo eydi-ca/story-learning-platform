@@ -5,7 +5,7 @@ import { prologue } from '../data/prologue'
 import { siteContent } from '../data/siteContent'
 import { getCurrentUser } from '../utils/auth'
 import { getJoinedClasses, getOrSetActiveClass, selectActiveClass } from '../utils/classUtils'
-import { getChapterStatus, getClassCompletionSummary, isChapterUnlocked } from '../utils/progress'
+import { getChapterStatus, getChapterStorySession, getClassCompletionSummary, isChapterUnlocked } from '../utils/progress'
 
 function StudentChaptersPage() {
   const navigate = useNavigate()
@@ -110,6 +110,7 @@ function StudentChaptersPage() {
             const unlocked = isChapterUnlocked(user.id, activeClass.classCode, chapter.id)
             const status = getChapterStatus(user.id, activeClass.classCode, chapter.id)
             const passed = status === 'Passed'
+            const savedSession = getChapterStorySession(user.id, activeClass.classCode, chapter.id)
             const tileImage = chapter.scene?.coverImage || chapter.scene?.image || sampleBackground
             return (
               <div className={`relative flex ${index % 2 ? 'md:justify-end' : 'md:justify-start'}`} key={chapter.id}>
@@ -120,7 +121,9 @@ function StudentChaptersPage() {
                   disabled={!unlocked}
                   onClick={() =>
                     navigate(
-                      passed
+                      savedSession
+                        ? `/student/chapter/${chapter.id}`
+                        : passed
                         ? `/student/result/${chapter.id}`
                         : chapter.assessmentMode
                           ? `/student/chapter/${chapter.id}/activity`

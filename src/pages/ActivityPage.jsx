@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import sampleBackground from '../assets/sample_background.png'
 import ActivityRenderer from '../components/activity/ActivityRenderer'
@@ -7,6 +7,7 @@ import { getCurrentUser } from '../utils/auth'
 import { getOrSetActiveClass } from '../utils/classUtils'
 import {
   getChapterProgress,
+  formatStopwatchTime,
   isChapterUnlocked,
   saveActivityResult,
   startChapterAttempt,
@@ -38,33 +39,70 @@ function ActivityPage() {
   const chapter = chapters.find((item) => item.id === chapterId)
   const previewMode = new URLSearchParams(location.search).get('preview') === '1'
   const isAssessment = Boolean(chapter?.assessmentMode)
-  const questions = useMemo(() => prepareQuestions(chapter?.activities ?? []), [chapter])
+  const questions = useMemo(
+    () =>
+      prepareQuestions(chapter?.activities ?? [], {
+        shuffleQuestions: true,
+        shuffleChoices: !isAssessment,
+      }),
+    [chapter, isAssessment]
+  )
   const [answers, setAnswers] = useState({})
   const [error, setError] = useState('')
   const [dragging, setDragging] = useState(null)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [countingLockRoundIndex, setCountingLockRoundIndex] = useState(0)
   const [assessmentStarted, setAssessmentStarted] = useState(false)
+  const [assessmentStartedAt, setAssessmentStartedAt] = useState(null)
+  const [assessmentElapsedMs, setAssessmentElapsedMs] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const assessmentItemRefs = useRef([])
   const chapterProgress =
     user && activeClass && chapter
       ? getChapterProgress(user.id, activeClass.classCode, chapter.id)
       : null
 
   useEffect(() => {
-    if (!user || !activeClass || !chapter || chapterProgress?.passed) return
+    if (
+      !user ||
+      !activeClass ||
+      !chapter ||
+      (chapterProgress?.passed && !isAssessment) ||
+      (isAssessment && !assessmentStarted)
+    ) return
     startChapterAttempt({
       studentId: user.id,
       classCode: activeClass.classCode,
       chapterId: chapter.id,
     })
-  }, [activeClass, chapter, chapterProgress?.passed, user])
+  }, [activeClass, assessmentStarted, chapter, chapterProgress?.passed, isAssessment, user])
+
+  useEffect(() => {
+    if (!isAssessment || !assessmentStarted || !assessmentStartedAt || isSubmitting) return undefined
+
+    const updateElapsedTime = () => {
+      setAssessmentElapsedMs(Date.now() - assessmentStartedAt)
+    }
+
+    updateElapsedTime()
+    const timer = window.setInterval(updateElapsedTime, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [assessmentStarted, assessmentStartedAt, isAssessment, isSubmitting])
+
+  useEffect(() => {
+    if (!isAssessment || !assessmentStarted) return
+    assessmentItemRefs.current[currentIndex]?.scrollIntoView({
+      block: 'nearest',
+      behavior: 'smooth',
+    })
+  }, [assessmentStarted, currentIndex, isAssessment])
 
   if (!user || !chapter || !activeClass) return <Navigate to="/student/chapters" replace />
   if (!isChapterUnlocked(user.id, activeClass.classCode, chapter.id)) {
     return <Navigate to="/student/chapters" replace />
   }
-  if (chapterProgress?.passed && !previewMode) {
+  if (chapterProgress?.passed && !previewMode && !isAssessment) {
     return <Navigate to={`/student/result/${chapter.id}`} replace />
   }
 
@@ -130,6 +168,7 @@ function ActivityPage() {
         chapterId: chapter.id,
         ...graded,
         passedOverride: isAssessment ? true : undefined,
+        allowRetakeAfterPass: isAssessment,
       })
       if (saved?.error) {
         setError(saved.error)
@@ -178,10 +217,37 @@ function ActivityPage() {
     void handleSubmit(answers)
   }
 
+  function handleStartAssessment() {
+    const startedAt = Date.now()
+    setAssessmentStartedAt(startedAt)
+    setAssessmentElapsedMs(0)
+    setAssessmentStarted(true)
+
+    if (user && activeClass && chapter) {
+      startChapterAttempt({
+        studentId: user.id,
+        classCode: activeClass.classCode,
+        chapterId: chapter.id,
+      })
+    }
+  }
+
   const currentSubmittableValue = getSubmittableAnswer(currentQuestion, currentValue)
   const currentQuestionComplete = currentQuestion
     ? isQuestionAnswered(currentQuestion, currentSubmittableValue)
     : false
+  const answeredCount = questions.filter((question) =>
+    isQuestionAnswered(question, answers[question.id])
+  ).length
+  const firstIncompleteIndex = questions.findIndex(
+    (question) => !isQuestionAnswered(question, answers[question.id])
+  )
+  const assessmentProgressPercent = questions.length
+    ? Math.round((answeredCount / questions.length) * 100)
+    : 0
+  const canUseAssessmentNext =
+    currentQuestionComplete &&
+    (firstIncompleteIndex === -1 || firstIncompleteIndex >= currentIndex)
   const showActivityFooterActions = !isSelfControlledActivity || currentQuestionComplete
 
   if (isAssessment) {
@@ -212,9 +278,17 @@ function ActivityPage() {
                 <p className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">
                   Question {currentIndex + 1} of {questions.length}
                 </p>
-                <span className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-bold text-slate-700">
-                  {Object.keys(answers).length}/{questions.length} answered
+                <span className="text-sm font-bold text-slate-700">
+                  {answeredCount}/{questions.length} answered
                 </span>
+              </div>
+              <div className="mt-4" aria-label={`Assessment progress: ${assessmentProgressPercent}%`}>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className="h-full rounded-full bg-sky-500 transition-all duration-300"
+                    style={{ width: `${assessmentProgressPercent}%` }}
+                  />
+                </div>
               </div>
 
               {currentQuestion ? (
@@ -279,8 +353,8 @@ function ActivityPage() {
                 </button>
                 <button
                   type="button"
-                  className="rounded-lg bg-slate-950 px-5 py-3 font-bold text-white hover:bg-slate-800"
-                  disabled={isSubmitting}
+                  className="rounded-lg bg-slate-950 px-5 py-3 font-bold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isSubmitting || !canUseAssessmentNext}
                   onClick={onLastQuestion && isAssessment ? handleAssessmentSubmit : handleNext}
                 >
                   {onLastQuestion ? (isSubmitting ? 'Submitting...' : 'Submit Assessment') : 'Next'}
@@ -288,33 +362,39 @@ function ActivityPage() {
               </div>
             </article>
 
-            <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <aside className="flex flex-col self-start rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-sm font-black uppercase tracking-[0.16em] text-slate-500">
                 Items
               </p>
-              <div className="mt-4 grid grid-cols-5 gap-2 lg:grid-cols-3">
+              <div className="mt-4 grid max-h-56 grid-cols-2 gap-x-6 gap-y-2 overflow-y-auto pr-2 text-sm [scrollbar-width:none] lg:grid-cols-1 [&::-webkit-scrollbar]:hidden">
                 {questions.map((question, index) => {
                   const answered = isQuestionAnswered(question, answers[question.id])
                   return (
-                    <button
+                    <span
                       key={question.id}
-                      type="button"
-                      className={`h-10 rounded-lg border text-sm font-black transition ${
-                        index === currentIndex
-                          ? 'border-sky-500 bg-sky-50 text-sky-800'
-                          : answered
-                            ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
-                            : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'
-                      }`}
-                      onClick={() => {
-                        setError('')
-                        setCurrentIndex(index)
+                      ref={(element) => {
+                        assessmentItemRefs.current[index] = element
                       }}
+                      className={`w-fit font-bold ${
+                        index === currentIndex
+                          ? 'text-sky-700 underline decoration-2 underline-offset-4'
+                          : answered
+                            ? 'text-emerald-700'
+                            : 'text-slate-400'
+                      }`}
                     >
-                      {index + 1}
-                    </button>
+                      Item {index + 1}
+                    </span>
                   )
                 })}
+              </div>
+              <div className="mt-4 shrink-0 border-t border-slate-200 pt-3">
+                <p className="text-[0.65rem] font-black uppercase tracking-[0.14em] text-slate-500">
+                  Time
+                </p>
+                <p className="mt-1 font-mono text-lg font-black text-slate-950">
+                  {formatStopwatchTime(assessmentElapsedMs)}
+                </p>
               </div>
             </aside>
           </div>
@@ -342,7 +422,7 @@ function ActivityPage() {
                 <button
                   type="button"
                   className="rounded-lg bg-slate-950 px-5 py-3 font-bold text-white hover:bg-slate-800"
-                  onClick={() => setAssessmentStarted(true)}
+                  onClick={handleStartAssessment}
                 >
                   Start test
                 </button>

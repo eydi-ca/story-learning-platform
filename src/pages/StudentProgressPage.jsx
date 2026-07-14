@@ -3,7 +3,7 @@ import AvatarBadge from '../components/AvatarBadge'
 import { chapters } from '../data/chapters'
 import { getCurrentUser } from '../utils/auth'
 import { getJoinedClasses, getOrSetActiveClass, selectActiveClass } from '../utils/classUtils'
-import { formatElapsedTime, getChapterProgress, getClassCompletionSummary } from '../utils/progress'
+import { formatClockTime, formatElapsedTime, getChapterProgress, getClassCompletionSummary } from '../utils/progress'
 
 function getMotivationalMessage(averageScore) {
   if (averageScore >= 90) {
@@ -86,7 +86,7 @@ function StudentProgressPage() {
                   <td className="p-3">{record ? `${record.percentage}%` : '-'}</td>
                   <td className="p-3">{record ? (record.passed ? 'Passed' : 'Failed') : 'No attempt'}</td>
                   <td className="p-3">{record ? formatElapsedTime(record.totalElapsedMs) : '-'}</td>
-                  <td className="p-3">{record?.passedSubmittedAt ? new Date(record.passedSubmittedAt).toLocaleString() : '-'}</td>
+                  <td className="p-3">{record?.passedSubmittedAt ? formatClockTime(record.passedSubmittedAt) : '-'}</td>
                   <td className="p-3">{record ? <Link className="font-bold text-sky-700" to={`/student/result/${chapter.id}`}>View result</Link> : '-'}</td>
                 </tr>
               )

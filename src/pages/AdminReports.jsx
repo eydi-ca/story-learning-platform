@@ -1,6 +1,6 @@
 import { chapters } from '../data/chapters'
 import { siteContent } from '../data/siteContent'
-import { getAllCompatibleProgressRecords } from '../utils/progress'
+import { formatClockTime, getAllCompatibleProgressRecords } from '../utils/progress'
 import { getClasses } from '../utils/storage'
 
 function SummaryFigure({ label, value, detail }) {
@@ -123,7 +123,7 @@ function AdminReports() {
                       {record.passed ? 'Passed' : 'Needs retry'}
                     </span>
                   </td>
-                  <td className="px-4 py-4 text-slate-700">{new Date(record.completedAt).toLocaleString()}</td>
+                  <td className="px-4 py-4 text-slate-700">{formatClockTime(record.completedAt)}</td>
                 </tr>
               )) : (
                 <tr>

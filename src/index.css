@@ -212,6 +212,11 @@ summary:hover {
   color: var(--brown);
 }
 
+.storybook-bg table.answer-key-table thead {
+  background: transparent;
+  color: inherit;
+}
+
 .storybook-bg table tbody tr {
   border-color: rgb(200 148 78 / 0.28);
 }

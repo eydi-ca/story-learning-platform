@@ -8,10 +8,13 @@ import { chapters } from '../data/chapters'
 import { getCurrentUser } from '../utils/auth'
 import { getOrSetActiveClass } from '../utils/classUtils'
 import {
+  clearChapterStorySession,
   getChapterProgress,
+  getChapterStorySession,
   isChapterUnlocked,
   saveActivityResult,
   saveChapterCompletion,
+  saveChapterStorySession,
   startChapterAttempt,
 } from '../utils/progress'
 import { gradeQuestions, isQuestionAnswered } from '../utils/quizUtils'
@@ -36,6 +39,7 @@ function ChapterPage() {
   const [skipSignal, setSkipSignal] = useState(0)
   const [repeatSignal, setRepeatSignal] = useState(0)
   const [showTitleCover, setShowTitleCover] = useState(true)
+  const [titleCoverDurationMs, setTitleCoverDurationMs] = useState(3000)
   const [mode, setMode] = useState('dialogue')
   const [revealedPageIndex, setRevealedPageIndex] = useState(0)
   const [awaitingPageScroll, setAwaitingPageScroll] = useState(false)
@@ -44,6 +48,7 @@ function ChapterPage() {
   const [activityError, setActivityError] = useState('')
   const [activityDragging, setActivityDragging] = useState(null)
   const [countingLockRoundIndex, setCountingLockRoundIndex] = useState(0)
+  const [isPageReplay, setIsPageReplay] = useState(false)
   const [replayChapterMode, setReplayChapterMode] = useState(
     new URLSearchParams(location.search).get('replay') === '1'
   )
@@ -52,6 +57,24 @@ function ChapterPage() {
   const chapter = chapters.find((item) => item.id === chapterId)
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const replayRequested = searchParams.get('replay') === '1'
+    const restartRequested = searchParams.get('restart') === '1'
+    const savedSession =
+      user && activeClass && chapter && !restartRequested
+        ? getChapterStorySession(user.id, activeClass.classCode, chapter.id)
+        : null
+    const savedPageIndex = Math.max(0, savedSession?.pageIndex ?? 0)
+    const savedPageStart = buildDialoguePages(chapter)?.[savedPageIndex]?.startIndex ?? 0
+
+    if (restartRequested && user && activeClass && chapter) {
+      clearChapterStorySession({
+        studentId: user.id,
+        classCode: activeClass.classCode,
+        chapterId: chapter.id,
+      })
+    }
+
     setDialogueIndex(0)
     setHasStarted(false)
     setTypingComplete(false)
@@ -59,6 +82,7 @@ function ChapterPage() {
     setSkipSignal(0)
     setRepeatSignal(0)
     setShowTitleCover(true)
+    setTitleCoverDurationMs(savedSession ? 2000 : 3000)
     setMode('dialogue')
     setRevealedPageIndex(0)
     setAwaitingPageScroll(false)
@@ -67,23 +91,36 @@ function ChapterPage() {
     setActivityError('')
     setActivityDragging(null)
     setCountingLockRoundIndex(0)
-    setReplayChapterMode(new URLSearchParams(location.search).get('replay') === '1')
-  }, [chapterId, location.search])
+    setIsPageReplay(false)
+    setReplayChapterMode(Boolean(savedSession?.replayChapterMode) || replayRequested)
+
+    if (savedSession) {
+      setDialogueIndex(savedPageStart)
+      setMode(savedSession.mode ?? 'dialogue')
+      setRevealedPageIndex(Math.max(savedPageIndex, savedSession.revealedPageIndex ?? savedPageIndex))
+      setAwaitingPageScroll(Boolean(savedSession.awaitingPageScroll))
+      setCompletedPageIndexes(
+        Array.isArray(savedSession.completedPageIndexes)
+          ? savedSession.completedPageIndexes
+          : Array.from({ length: savedPageIndex }, (_, index) => index)
+      )
+    }
+  }, [activeClass?.classCode, chapter, chapterId, location.search, user?.id])
 
   useEffect(() => {
-    if (mode !== 'dialogue') return undefined
-
     if (showTitleCover) {
       const timer = window.setTimeout(() => {
         setShowTitleCover(false)
         setHasStarted(true)
-      }, 1500)
+      }, titleCoverDurationMs)
 
       return () => window.clearTimeout(timer)
     }
 
+    if (mode !== 'dialogue') return undefined
+
     return undefined
-  }, [chapterId, mode, repeatSignal, showTitleCover])
+  }, [chapterId, mode, repeatSignal, showTitleCover, titleCoverDurationMs])
 
   const dialogue = useMemo(
     () => chapter?.dialogues?.[dialogueIndex] ?? null,
@@ -108,6 +145,7 @@ function ChapterPage() {
   const isPlaceholderActivity = inlineActivity?.id?.includes('placeholder')
   const isTilePuzzle = inlineActivity?.type === 'tile-puzzle'
   const isIntegerTrial = inlineActivity?.type === 'integer-trial'
+  const isCountingLock = inlineActivity?.type === 'counting-lock'
   const isSelfControlledActivity = selfControlledActivityTypes.has(inlineActivity?.type)
   const chapterProgress =
     user && activeClass && chapter
@@ -126,6 +164,38 @@ function ChapterPage() {
   const showInlineActivityProceed =
     !isSelfControlledActivity ||
     Boolean(inlineActivity && isQuestionAnswered(inlineActivity, currentInlineSubmittableAnswer))
+  const allStoryPagesCompleted =
+    pages.length > 0 && pages.every((_, pageIndex) => completedPageIndexes.includes(pageIndex))
+  const storyPlaybackIsActive = mode === 'dialogue' || isPageReplay
+
+  useEffect(() => {
+    if (!user || !activeClass || !chapter || chapter.assessmentMode || showTitleCover) return
+
+    saveChapterStorySession({
+      studentId: user.id,
+      classCode: activeClass.classCode,
+      chapterId: chapter.id,
+      session: {
+        mode,
+        pageIndex: currentPageIndex,
+        revealedPageIndex,
+        awaitingPageScroll,
+        completedPageIndexes,
+        replayChapterMode,
+      },
+    })
+  }, [
+    activeClass,
+    awaitingPageScroll,
+    chapter,
+    completedPageIndexes,
+    currentPageIndex,
+    mode,
+    replayChapterMode,
+    revealedPageIndex,
+    showTitleCover,
+    user,
+  ])
 
   useEffect(() => {
     if (!user || !activeClass || !chapter || chapterProgress?.passed) return
@@ -141,7 +211,7 @@ function ChapterPage() {
       !hasStarted ||
       !typingComplete ||
       !audioComplete ||
-      mode !== 'dialogue' ||
+      !storyPlaybackIsActive ||
       awaitingPageScroll
     ) {
       return undefined
@@ -159,6 +229,11 @@ function ChapterPage() {
       setCompletedPageIndexes((current) =>
         current.includes(currentPageIndex) ? current : [...current, currentPageIndex]
       )
+
+      if (isPageReplay) {
+        setIsPageReplay(false)
+        return
+      }
 
       if (
         inlineActivity &&
@@ -194,8 +269,10 @@ function ChapterPage() {
     inlineActivityComplete,
     inlineActivityIsAtEnd,
     inlineActivityPageNumber,
+    isPageReplay,
     mode,
     pages.length,
+    storyPlaybackIsActive,
     typingComplete,
   ])
 
@@ -208,6 +285,11 @@ function ChapterPage() {
   }
 
   function handleReplay() {
+    clearChapterStorySession({
+      studentId: user.id,
+      classCode: activeClass.classCode,
+      chapterId: chapter.id,
+    })
     setDialogueIndex(0)
     setTypingComplete(false)
     setAudioComplete(false)
@@ -215,14 +297,22 @@ function ChapterPage() {
     setSkipSignal((value) => value + 1)
     setRepeatSignal((value) => value + 1)
     setShowTitleCover(true)
+    setTitleCoverDurationMs(3000)
     setMode('dialogue')
     setRevealedPageIndex(0)
     setAwaitingPageScroll(false)
     setCompletedPageIndexes([])
+    setIsPageReplay(false)
     setReplayChapterMode(true)
   }
 
   async function handleChapterContinue() {
+    clearChapterStorySession({
+      studentId: user.id,
+      classCode: activeClass.classCode,
+      chapterId: chapter.id,
+    })
+
     if (!inlineActivity && !chapterProgress?.passed) {
       await saveChapterCompletion({
         studentId: user.id,
@@ -294,7 +384,97 @@ function ChapterPage() {
     setAwaitingPageScroll(false)
   }
 
-  if (mode === 'activity' && inlineActivity) {
+  const endActivityPanel = inlineActivity ? (
+    <div
+      className="story-scene relative min-h-[calc(100vh-4.75rem)] bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: `linear-gradient(180deg, rgb(15 23 42 / 0.2), rgb(15 23 42 / 0.62)), url(${inlineActivityBackdrop})`,
+      }}
+    >
+      <div className="story-scene-glow pointer-events-none absolute inset-0" />
+      <div className="story-scene-bottom-shade pointer-events-none absolute inset-x-0 bottom-0 h-72" />
+      <div className="relative z-10 flex min-h-[calc(100vh-4.75rem)] items-center justify-center py-6">
+        <div className="story-summary-panel story-dialogue-entrance w-full max-w-5xl rounded-[1.6rem] p-5 sm:p-7">
+          <div className="flex flex-col gap-5">
+            <div>
+              <span className="inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-white/80">
+                {isCountingLock
+                  ? "Alvin's challenge"
+                  : isPlaceholderActivity
+                    ? 'Placeholder checkpoint'
+                    : isIntegerTrial
+                      ? 'Integer checkpoint'
+                      : isTilePuzzle
+                        ? 'Map reconstruction'
+                        : "Alvin's challenge"}
+              </span>
+              <h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">
+                {chapter.title}
+              </h1>
+              <p className="mt-2 text-sm leading-7 text-white/82">
+                {isCountingLock
+                  ? `Round ${countingLockRoundIndex + 1}`
+                  : isPlaceholderActivity
+                    ? 'Placeholder checkpoint before the gem scene'
+                    : isIntegerTrial
+                      ? 'Answer 2 questions each to obtain the map, torch, and key, then solve the final map'
+                      : isTilePuzzle
+                        ? 'Restore the puzzle to help Alvin rebuild the Town of Integers'
+                        : 'Decide which numbers the Whole Number Gate should accept'}
+              </p>
+            </div>
+
+            {activityError ? (
+              <p className="rounded-2xl border border-red-300/60 bg-red-500/10 p-4 font-semibold text-red-100">
+                {activityError}
+              </p>
+            ) : null}
+
+            <ActivityRenderer
+              question={inlineActivity}
+              value={activityAnswers[inlineActivity.id]}
+              onChange={(nextAnswer) => {
+                setActivityAnswers((current) => ({
+                  ...current,
+                  [inlineActivity.id]: nextAnswer,
+                }))
+                setActivityError('')
+              }}
+              onRoundChange={setCountingLockRoundIndex}
+              dragging={activityDragging}
+              setDragging={setActivityDragging}
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/12 pt-4">
+              <p className="text-sm font-semibold text-white/75">
+                {isCountingLock
+                  ? 'Help Alvin complete the counting lock before the gem appears.'
+                  : isPlaceholderActivity
+                    ? 'Complete this placeholder checkpoint here. We will replace it with the real chapter activity later.'
+                    : isIntegerTrial
+                      ? 'Obtain all three items in order, then solve the final 4x4 map before continuing.'
+                      : isTilePuzzle
+                        ? 'Restore the town map before Alvin continues deeper into the chapter.'
+                        : 'Accept whole numbers and reject non-whole numbers. One mistake restarts the gate.'}
+              </p>
+
+              {showInlineActivityProceed ? (
+                <button
+                  type="button"
+                  className="gold-button interactive-button rounded-full px-5 py-3 font-bold"
+                  onClick={() => void handleInlineActivitySubmit()}
+                >
+                  Proceed to chapter summary
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null
+
+  if (mode === 'activity' && inlineActivity && !inlineActivityIsAtEnd) {
     const isCountingLock = inlineActivity.type === 'counting-lock'
 
     return (
@@ -435,13 +615,17 @@ function ChapterPage() {
         narrationComplete={narrationComplete}
         typingComplete={typingComplete}
         typewriterStart={hasStarted}
+        isReviewingPage={isPageReplay}
         skipSignal={skipSignal}
         repeatSignal={repeatSignal}
         revealedPageIndex={revealedPageIndex}
         awaitingPageScroll={awaitingPageScroll}
+        completedPageIndexes={completedPageIndexes}
         showTitleCover={showTitleCover}
-        continueLabel={inlineActivity ? 'View activity result' : 'Complete chapter'}
+        continueLabel={inlineActivity && inlineActivityComplete ? 'View activity result' : 'Complete chapter'}
+        showSceneContinue={!(inlineActivity && inlineActivityIsAtEnd && !inlineActivityComplete)}
         showRetakeActivity={Boolean(inlineActivity) && chapterProgress?.passed}
+        afterPagesContent={inlineActivityIsAtEnd ? endActivityPanel : null}
         mode={mode}
         onRetakeActivity={() => navigate(`/student/chapter/${chapter.id}/activity?preview=1`)}
         onTypingComplete={() => setTypingComplete(true)}
@@ -462,15 +646,19 @@ function ChapterPage() {
           setRepeatSignal((value) => value + 1)
           setAwaitingPageScroll(false)
         }}
-        onReplayPage={(pageStart) => {
+        onReplayPage={(pageStart, pageIndex) => {
           setDialogueIndex(pageStart)
           setTypingComplete(false)
           setAudioComplete(false)
           setHasStarted(true)
+          setIsPageReplay(true)
           setSkipSignal((value) => value + 1)
           setRepeatSignal((value) => value + 1)
-          setMode('dialogue')
+          setMode(inlineActivityIsAtEnd && allStoryPagesCompleted ? 'activity' : 'dialogue')
           setAwaitingPageScroll(false)
+          if (Number.isInteger(pageIndex)) {
+            setRevealedPageIndex((current) => Math.max(current, pageIndex))
+          }
         }}
         canSkipPage={completedPageIndexes.includes(currentPageIndex)}
         onSkipPage={() => {}}

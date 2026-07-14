@@ -371,17 +371,22 @@ function RealNumberLineActivity({ question, value, onChange }) {
                   )
                 })}
 
-                {slots.map((slot) => {
+                {slots.map((slot, slotIndex) => {
                   const item = safeValue.part2.placedIds
                     .filter((itemId) => safeValue.part2.placements[itemId] === slot.id)
                     .map((itemId) => itemMap[itemId])[0]
                   const topPosition = `${100 - slot.positionPercent}%`
+                  const isLeftSlot = slotIndex % 2 === 1
 
                   return (
                     <button
                       key={slot.id}
                       type="button"
-                      className="absolute left-[calc(50%+2.45rem)] -translate-y-1/2 sm:left-[calc(50%+3.7rem)]"
+                      className={`absolute -translate-y-1/2 ${
+                        isLeftSlot
+                          ? 'right-[calc(50%+2.45rem)] sm:right-[calc(50%+3.7rem)]'
+                          : 'left-[calc(50%+2.45rem)] sm:left-[calc(50%+3.7rem)]'
+                      }`}
                       style={{ top: topPosition }}
                       onDragEnter={() => {
                         if (!item && draggingPart2Id) {

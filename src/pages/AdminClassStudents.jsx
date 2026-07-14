@@ -1,7 +1,7 @@
 import { Navigate, useParams } from 'react-router-dom'
 import { getUserById } from '../utils/auth'
 import { getClassById, getClassStudents } from '../utils/classUtils'
-import { getClassCompletionSummary } from '../utils/progress'
+import { formatClockTime, getClassCompletionSummary } from '../utils/progress'
 
 function AdminClassStudents() {
   const { classId } = useParams()
@@ -33,7 +33,7 @@ function AdminClassStudents() {
                   <td className="px-4 py-3 text-slate-600">{summary.overallPercentage}%</td>
                   <td className="px-4 py-3 text-slate-600">{summary.averageScore}%</td>
                   <td className="px-4 py-3 text-slate-600">{summary.latest ? (summary.latest.passed ? 'Pass' : 'Fail') : '-'}</td>
-                  <td className="px-4 py-3 text-slate-600">{summary.latest ? new Date(summary.latest.completedAt).toLocaleString() : '-'}</td>
+                  <td className="px-4 py-3 text-slate-600">{summary.latest ? formatClockTime(summary.latest.completedAt) : '-'}</td>
                 </tr>
               )
             })}
