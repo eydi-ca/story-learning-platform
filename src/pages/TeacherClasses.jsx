@@ -6,6 +6,22 @@ import { siteContent } from '../data/siteContent'
 import { getCurrentUser } from '../utils/auth'
 import { createClass, deleteClass, getClassStudents, getTeacherClasses } from '../utils/classUtils'
 
+function PencilIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="m14.5 5.5 4 4M4 20h4l10.5-10.5a2.83 2.83 0 0 0-4-4L4 16v4Z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function TeacherClasses() {
   const teacher = getCurrentUser()
   const [classes, setClasses] = useState(getTeacherClasses(teacher.id))
@@ -49,21 +65,55 @@ function TeacherClasses() {
       </div>
       <div className="parchment-surface overflow-hidden rounded-[24px]">
         <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="text-[color:var(--brown)]"><tr><th className="p-4 font-bold">Class Name</th><th className="p-4 font-bold">Class Code</th><th className="p-4 font-bold">Students</th><th className="p-4 font-bold">Created Date</th><th className="p-4 font-bold">Status</th><th className="p-4 font-bold">Actions</th></tr></thead>
+        <table className="w-full table-fixed text-left text-sm">
+          <colgroup>
+            <col className="w-[15%]" />
+            <col className="w-[14%]" />
+            <col className="w-[10%]" />
+            <col className="w-[16%]" />
+            <col className="w-[12%]" />
+            <col className="w-[33%]" />
+          </colgroup>
+          <thead className="text-[color:var(--brown)]"><tr><th className="px-5 py-4 font-bold">Class Name</th><th className="px-5 py-4 font-bold">Class Code</th><th className="px-4 py-4 text-center font-bold">Students</th><th className="px-5 py-4 font-bold">Created Date</th><th className="px-5 py-4 font-bold">Status</th><th className="px-5 py-4 font-bold">Actions</th></tr></thead>
           <tbody>
             {classes.map((classroom) => (
               <tr className="border-t border-[color:var(--border)]/40" key={classroom.id}>
-                <td className="p-4 font-semibold text-[color:var(--brown)]">{classroom.className}<p className="text-xs font-normal text-[color:var(--muted)]">{classroom.description}</p></td>
-                <td className="p-4 font-mono font-bold text-violet-700">{classroom.classCode}</td>
-                <td className="p-4 text-[color:var(--muted)]">{getClassStudents(classroom.id).length}</td>
-                <td className="p-4 text-[color:var(--muted)]">{new Date(classroom.createdAt).toLocaleDateString()}</td>
-                <td className="p-4 text-[color:var(--muted)]">{classroom.status}</td>
-                <td className="p-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Link className="font-bold text-violet-700" to={`/teacher/classes/${classroom.id}/students`}>View Students</Link>
-                    <button className="font-bold text-[color:var(--muted)]" onClick={() => navigator.clipboard?.writeText(classroom.classCode)}>Copy Code</button>
-                    <button className="font-bold text-red-700" onClick={() => setClassToDelete(classroom)}>Delete</button>
+                <td className="px-5 py-5 font-semibold text-[color:var(--brown)]">{classroom.className}<p className="mt-1 text-xs font-normal leading-5 text-[color:var(--muted)]">{classroom.description}</p></td>
+                <td className="px-5 py-5 font-mono font-bold text-violet-700">{classroom.classCode}</td>
+                <td className="px-4 py-5 text-center text-[color:var(--muted)]">{getClassStudents(classroom.id).length}</td>
+                <td className="px-5 py-5 text-[color:var(--muted)]">{new Date(classroom.createdAt).toLocaleDateString()}</td>
+                <td className="px-5 py-5 text-[color:var(--muted)]">{classroom.status}</td>
+                <td className="px-5 py-5">
+                  <div className="flex items-center gap-4">
+                    <Link className="whitespace-nowrap font-bold text-violet-700 underline-offset-4 hover:underline" to={`/teacher/classes/${classroom.id}/students`}>View Students</Link>
+                    <div className="flex items-center gap-2">
+                      <span className="group relative inline-flex">
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[color:var(--muted)] transition hover:bg-white/60 hover:text-violet-700"
+                          aria-label={`Copy code ${classroom.classCode}`}
+                          onClick={() => navigator.clipboard?.writeText(classroom.classCode)}
+                        >
+                          <PencilIcon />
+                        </button>
+                        <span className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-[color:var(--brown)] px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">
+                          Copy code
+                        </span>
+                      </span>
+                      <span className="group relative inline-flex">
+                        <button
+                          type="button"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-red-700 transition hover:bg-red-50"
+                          aria-label={`Delete ${classroom.className}`}
+                          onClick={() => setClassToDelete(classroom)}
+                        >
+                          <TrashIcon />
+                        </button>
+                        <span className="pointer-events-none absolute -top-9 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-md bg-red-700 px-2 py-1 text-xs font-semibold text-white opacity-0 shadow-sm transition group-hover:opacity-100">
+                          Delete
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </td>
               </tr>

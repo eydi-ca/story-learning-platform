@@ -32,6 +32,7 @@ import TeacherClasses from './pages/TeacherClasses'
 import TeacherDashboard from './pages/TeacherDashboard'
 import TeacherProfile from './pages/TeacherProfile'
 import TeacherProfileSettings from './pages/TeacherProfileSettings'
+import TeacherStudentDetail from './pages/TeacherStudentDetail'
 import { getCurrentUser, getRedirectForUser, isAdminLoggedIn } from './utils/auth'
 
 function RoleGuard({ role, children }) {
@@ -80,6 +81,7 @@ function App() {
         <Route path="dashboard" element={<TeacherDashboard />} />
         <Route path="classes" element={<TeacherClasses />} />
         <Route path="classes/:classId/students" element={<TeacherClassStudents />} />
+        <Route path="classes/:classId/students/:studentId" element={<TeacherStudentDetail />} />
         <Route path="profile" element={<TeacherProfile />} />
         <Route path="profile/settings" element={<TeacherProfileSettings />} />
       </Route>

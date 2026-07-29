@@ -15,8 +15,8 @@ const featureIcons = {
 }
 
 const teamAvatarByMemberName = {
-  'Bagaoisan, Mark Alvin': 'mark',
   'Caronan, Emmanuel': 'emman',
+  'Bagaoisan, Mark Alvin': 'mark',
   'Danganon, Adrian Lone': 'adrian',
   'Quiseo, Ronica': 'ronica',
   'Soriano, Jack Angelo': 'jack',
@@ -136,15 +136,19 @@ function LandingPage() {
           <h2 className="magic-heading mt-2 text-3xl font-black sm:text-4xl">{landing.teamTitle}</h2>
           <p className="mt-3 text-[color:var(--muted)]">{landing.teamDescription}</p>
         </div>
-        <div className="mx-auto mt-8 grid max-w-sm gap-4 sm:max-w-none sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="mx-auto mt-8 grid max-w-sm items-stretch gap-4 sm:max-w-none sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {landing.team.map((member, index) => (
-            <div className="parchment-surface interactive-card flex min-h-[260px] flex-col items-center rounded-xl p-4 text-center" key={member.name}>
-              <AvatarBadge
-                avatarId={teamAvatarByMemberName[member.name] ?? teamAvatars[index % teamAvatars.length].id}
-                size="lg"
-              />
-              <h3 className="mt-4 text-base font-black leading-7 text-[color:var(--brown)]">{member.name}</h3>
-              <p className="mt-3 text-sm leading-6 text-[color:var(--muted)]">{member.description}</p>
+            <div className="parchment-surface interactive-card flex h-full min-h-[420px] flex-col items-center rounded-xl px-5 py-6 text-center" key={member.name}>
+              <div className="flex h-24 items-center justify-center">
+                <AvatarBadge
+                  avatarId={teamAvatarByMemberName[member.name] ?? teamAvatars[index % teamAvatars.length].id}
+                  size="lg"
+                />
+              </div>
+              <h3 className="mt-3 flex min-h-[4.25rem] items-center justify-center text-base font-black leading-7 text-[color:var(--brown)]">
+                {member.name}
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-[color:var(--muted)]">{member.description}</p>
             </div>
           ))}
         </div>

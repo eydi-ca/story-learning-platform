@@ -57,29 +57,29 @@ export const siteContent = {
       'Numberland Quest was created by a team of student developers who designed and developed the platform as a modern supplementary learning tool for students and educators.',
     team: [
       {
-        name: 'Bagaoisan, Mark Alvin',
-        role: 'Project Lead / System Planner',
-        description: 'Helped organize the system flow, learning concept, and overall project direction.',
-      },
-      {
-        name: 'Caronan, Emmanuel',
+        name: 'Caronan, Emmanuel M.',
         role: 'Frontend Developer',
-        description: 'Worked on the website interface, page structure, and user navigation.',
+        description: 'Led the overall development of the project and worked on the website interface, page structure, navigation system, and design consistency.',
       },
       {
-        name: 'Danganon, Adrian Lone',
-        role: 'UI/UX Designer',
-        description: 'Designed the student-friendly layout, RPG-inspired visuals, and learning flow.',
-      },
-      {
-        name: 'Quiseo, Ronica',
-        role: 'Content and Documentation Lead',
-        description: 'Helped prepare the story content, activity structure, and project documentation.',
-      },
-      {
-        name: 'Soriano, Jack Angelo',
+        name: 'Soriano, Jack Angelo M.',
         role: 'Quality Assurance / Tester',
-        description: 'Tested the website features, user flows, and page functionality.',
+        description: 'Wrote the story content and developed the student-friendly layout, RPG-inspired visual elements, and instructional sequence of the website.',
+      },
+      {
+        name: 'Danganon, Adrian Lone M.',
+        role: 'UI/UX Designer',
+        description: 'Prepared and organized the website’s audio materials, assisted in structuring the interactive activities, and contributed to the project documentation.',
+      },
+      {
+        name: 'Bagaoisan, Mark Alvin S.',
+        role: 'Project Lead / System Planner',
+        description: 'Organized the website’s system flow and conducted functionality testing to ensure that the features, pages, and navigation worked properly.',
+      },
+      {
+        name: 'Quiseo, Ronica M.',
+        role: 'Content and Documentation Lead',
+        description: 'Assisted in developing the learning concepts and reviewed the website’s activities and content to ensure their clarity, accuracy, and suitability for the learners.',
       },
     ],
   },

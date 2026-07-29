@@ -13,6 +13,8 @@ import {
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { syncCurrentSessionData } from './supabaseSync'
 
+export const PASSING_PERCENTAGE = 75
+
 export function getProgressKey({ studentId, classCode, chapterId }) {
   return `${studentId}_${classCode}_${chapterId}`
 }
@@ -44,6 +46,19 @@ export function formatClockTime(value) {
   const hour12 = hour % 12 || 12
 
   return `${String(hour12).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')} ${period}`
+}
+
+export function formatDateTime(value) {
+  if (!value) return '--'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '--'
+
+  return `${date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })} ${formatClockTime(value)}`
 }
 
 function readTimingMap() {
@@ -269,11 +284,14 @@ export async function saveActivityResult({
   allowRetakeAfterPass = false,
 }) {
   const percentage = total > 0 ? Math.round((score / total) * 100) : 100
-  const passed = typeof passedOverride === 'boolean' ? passedOverride : percentage >= 100
+  const passed =
+    typeof passedOverride === 'boolean'
+      ? passedOverride
+      : percentage >= PASSING_PERCENTAGE
   const existing = getCompatibleProgressRecords()
   const previous = getChapterProgress(studentId, classCode, chapterId)
 
-  if (previous?.passed) {
+  if (previous?.passed && !allowRetakeAfterPass) {
     return {
       error: 'This chapter has already been passed and recorded. Retakes are only allowed after a failed attempt.',
       progress: previous,
@@ -382,6 +400,7 @@ export async function saveChapterCompletion({
   classId,
   classCode,
   chapterId,
+  allowRetakeAfterPass = false,
 }) {
   const existing = getCompatibleProgressRecords()
   const previous = getChapterProgress(studentId, classCode, chapterId)

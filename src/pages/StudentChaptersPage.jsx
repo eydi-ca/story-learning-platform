@@ -5,7 +5,7 @@ import { prologue } from '../data/prologue'
 import { siteContent } from '../data/siteContent'
 import { getCurrentUser } from '../utils/auth'
 import { getJoinedClasses, getOrSetActiveClass, selectActiveClass } from '../utils/classUtils'
-import { getChapterStatus, getChapterStorySession, getClassCompletionSummary, isChapterUnlocked } from '../utils/progress'
+import { getChapterStatus, getChapterStorySession, getClassCompletionSummary, isChapterUnlocked, PASSING_PERCENTAGE } from '../utils/progress'
 
 function StudentChaptersPage() {
   const navigate = useNavigate()
@@ -152,7 +152,7 @@ function StudentChaptersPage() {
                             {chapter.duration}
                           </span>
                           <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                            {chapter.activities?.length ? 'Passing score: 100%' : 'Story summary'}
+                            {chapter.activities?.length ? `Passing score: ${PASSING_PERCENTAGE}%` : 'Story summary'}
                           </span>
                         </div>
                       </div>

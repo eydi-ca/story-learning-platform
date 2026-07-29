@@ -9,6 +9,7 @@ import {
   getChapterProgress,
   formatStopwatchTime,
   isChapterUnlocked,
+  PASSING_PERCENTAGE,
   saveActivityResult,
   startChapterAttempt,
 } from '../utils/progress'
@@ -149,7 +150,7 @@ function ActivityPage() {
             previewResult: {
               ...graded,
               percentage,
-              passed: isAssessment || percentage >= 100,
+              passed: isAssessment || percentage >= PASSING_PERCENTAGE,
               completedAt: new Date().toISOString(),
               totalElapsedMs: chapterProgress?.totalElapsedMs ?? 0,
               latestAttemptElapsedMs: 0,
