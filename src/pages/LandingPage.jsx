@@ -16,10 +16,10 @@ const featureIcons = {
 
 const teamAvatarByMemberName = {
   'Caronan, Emmanuel': 'emman',
-  'Bagaoisan, Mark Alvin': 'mark',
+  'Bagaoisan, Mark Alvin': 'jack',
   'Danganon, Adrian Lone': 'adrian',
   'Quiseo, Ronica': 'ronica',
-  'Soriano, Jack Angelo': 'jack',
+  'Soriano, Jack Angelo': 'mark',
 }
 
 function LandingPage() {
